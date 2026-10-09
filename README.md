@@ -18,7 +18,7 @@ Open http://127.0.0.1:4173. Set `PORT` to choose another port, for example `PORT
 npm test
 ```
 
-The included server binds to your own computer only and serves the game's public files. The game can also be served from any static web host. No account, backend, external assets, or build step is required.
+The included server binds to your own computer only and serves the game's public files. The game can also be served from any static web host. No account, backend, external assets, or compilation is required.
 
 ## Play
 
@@ -47,3 +47,9 @@ A blocked entry checks the built tower for gaps, excluding empty headroom. If th
 - `server.mjs` — dependency-free local preview server.
 
 This is an early playable prototype. Target height, draw weighting, and difficulty are still being tuned.
+
+## Deploy on Netlify
+
+Import this GitHub repository into Netlify. The included `netlify.toml` supplies the build command and publish directory automatically. No environment variables are needed.
+
+The build command (`npm run build`, or `node scripts/build.mjs`) copies only the four public game files into `dist/`, keeping tests, repository files, and the local server out of the deployed site. You can also upload the generated `dist/` directory manually.
