@@ -24,15 +24,17 @@ The included server binds to your own computer only and serves the game's public
 
 Arrow left/right: steer. Up or X: rotate clockwise 60°. Z: rotate counterclockwise. Down: descend faster. Space: hard drop. P/Escape: pause. Leaving the browser pauses automatically. The white dot marks the pivot; outlined cells show the landing position. On-screen buttons also work.
 
+**Edge lanes** (on by default, toggle in setup): a dashed lane runs beside each wall. A piece may steer partly into a lane to reach awkward wall pockets, but it must keep at least one hex on the board. Lane hexes are drawn faint, never collide, and are cut off when the piece locks; the landing outline marks them with a red ×. Holding an arrow stops at the visible wall; press again to enter a lane. New deliveries always appear fully on the board, and rotation prefers on-board positions before using a lane.
+
 Build eight consecutive solid floors from the sawtooth foundation in five minutes. The setup offers 12- and 16-floor targets too. The clock is a deadline: reaching the target wins; running out of time loses. Complete floors stay in place.
 
 A newly completed row triggers inspection of every row below it. If there is a gap, retain the lowest incomplete row and everything below it; remove all placed cells above it. No collapse, shifting, or grinding. Fixed blockers, if enabled, remain. Simply placing above a gap never triggers deletion. The brief cutback animation locks input while the clock continues.
 
-“Try the cutback demo” sets up a complete first floor, a second floor with one gap, and a nearly complete third floor. Press Space to finish floor three and see exactly what gets removed.
+“Try the cutback demo” runs without edge lanes. It sets up a complete first floor, a second floor with one gap, and a nearly complete third floor. Press Space to finish floor three and see exactly what gets removed.
 
 ## Scope and geometry
 
-Eight columns, 20 staggered horizontal rows of pointy-top hexagons. Shapes use axial coordinates; rotation is a real 60° transform around a member cell. Gravity alternates the two downward neighbor directions to keep descent centered. If that step crosses a side wall, it uses the other downward neighbor; occupied cells and the floor still stop it. Gravity, the landing outline, and hard drop share this path. The three free trihexes and seven free tetrahexes are enumerated by rotations/reflections. Each draw bag contains two of every tetrahex and one of every trihex (14:3 weighting). Pieces are not reflected during play.
+Eight columns, 20 staggered horizontal rows of pointy-top hexagons. Shapes use axial coordinates; rotation is a real 60° transform around a member cell. Gravity alternates the two downward neighbor directions to keep descent centered. If that step crosses a side wall, it uses the other downward neighbor; occupied cells and the floor still stop it. Gravity, the landing outline, and hard drop share this path. With edge lanes on, "side wall" means the outer lane edge, so a piece near a wall can swing into a lane as it falls; lane hexes still stop at the floor. The three free trihexes and seven free tetrahexes are enumerated by rotations/reflections. Each draw bag contains two of every tetrahex and one of every trihex (14:3 weighting). Pieces are not reflected during play.
 
 Clear terrain is the default. Optional fixed blockers count as filled and survive cutbacks. Incoming rocks and the HTTP agent interface are deferred until the core loop has been playtested. No rigid-body physics, octagonal layers, survival scoring, or moving rubble remain in this version.
 
