@@ -3,7 +3,7 @@ import {C} from './palette.js';
 import {loadAssets} from './assets.js';
 import {loadSettings,saveSettings} from './settings.js';
 import {DIFFICULTIES,difficulty,fitScale,layoutBox,hit,menuKey,SETTING_ROWS,settingLabel,changeSetting} from './ui.js';
-import {LAYOUT,drawSky,drawBackdrop,drawSprites,drawDim,drawBox,drawItems,drawLogo,drawControls,MENU_SCENERY,PLAY_SCENERY} from './render.js';
+import {LAYOUT,drawSky,drawBackdrop,drawSprites,drawDim,drawBox,drawItems,drawLogo,drawControls,MENU_SCENERY,PLAY_SCENERY,drawBoard,drawPanel} from './render.js';
 
 const canvas=document.getElementById('game'),ctx=canvas.getContext('2d'),screenEl=document.getElementById('screen'),scanEl=document.getElementById('scan');
 ctx.imageSmoothingEnabled=false;
@@ -45,7 +45,39 @@ function settingsInput(k,repeat){
  if(r.select===undefined)return;
  if(row==='back')screen='menu';else updateSettings(changeSetting(settings,row,1));
 }
-function playInput(k,repeat){}
+const PLAYKEYS={ArrowLeft:'left',ArrowRight:'right',ArrowUp:'cw',x:'cw',z:'ccw',' ':'drop',Shift:'beat'};
+const boxOpen=()=>game&&(game.paused||game.status!=='playing');
+const boxLayout=()=>layoutBox(game.paused?['RESUME','MENU']:['AGAIN','MENU'],{cx:LAYOUT.cabinet.x+LAYOUT.cabinet.w/2,y:136,minWidth:120});
+function pauseToggle(){if(screen!=='play'||game.status!=='playing')return;game.paused=!game.paused;soft=false;boxCursor=0;}
+function boxSelect(i){if(i===1){toMenu();return;}if(game.paused)game.paused=false;else start(diff);}
+function playInput(k,repeat){
+ if(boxOpen()){
+  if((k==='p'||k==='Escape')&&game.paused){if(!repeat)pauseToggle();return;}
+  const r=menuKey(2,boxCursor,k,repeat);boxCursor=r.cursor;
+  // A drop or a mashed key at the final second must not instantly restart: ignore selects briefly.
+  if(r.select!==undefined&&(game.paused||performance.now()-overSince>600))boxSelect(r.select);
+  return;
+ }
+ if(k==='p'||k==='Escape'){if(!repeat)pauseToggle();return;}
+ if(k==='ArrowDown'){soft=true;return;}
+ const a=PLAYKEYS[k];if(!a||!game.active())return;
+ if(repeat&&['cw','ccw','drop','beat'].includes(a))return;
+ // A held arrow stops at the visible wall; only a fresh press steers into a lane.
+ if(a==='left')game.move(-1,!repeat);if(a==='right')game.move(1,!repeat);
+ if(a==='cw')game.rotate(1);if(a==='ccw')game.rotate(-1);if(a==='beat')game.flipBeat();if(a==='drop')game.drop();
+}
+function blur(){soft=false;if(screen==='play'&&game.status==='playing'&&!game.paused){game.paused=true;boxCursor=0;}}
+addEventListener('blur',blur);
+document.addEventListener('visibilitychange',()=>{if(document.hidden)blur();});
+function handleEvents(now){
+ for(const e of game.events){
+  if(e.type==='cut'){flash={...e,time:now};note(`${e.reason==='blocked'?'ENTRY BLOCKED':e.reason==='reach'?'TOO HIGH':'CUTBACK'}: ${e.removed.length} HEXES REMOVED. FLOOR ${HEIGHT-e.gap} STAYS UNFINISHED.`);tone(80,.3);}
+  if(e.type==='step')tone(e.dir==='se'?1250:830,.035);
+  if(e.type==='lock'){tone(170);if(e.offcuts.length){offcut={cells:e.offcuts,time:now};if(!game.events.some(x=>x.type==='cut'))note(`OFFCUT: ${e.offcuts.length} ${e.offcuts.length===1?'HEX':'HEXES'} PAST THE WALL CUT OFF.`);tone(120,.06);}}
+  if(e.type==='jam')note('ENTRY BLOCKED AND NOTHING LEFT TO CUT. PAUSE FOR THE MENU.');
+ }
+ game.events=[];
+}
 
 addEventListener('keydown',e=>{
  if(e.ctrlKey||e.metaKey||e.altKey)return;
@@ -61,6 +93,7 @@ const toCanvas=e=>{const r=canvas.getBoundingClientRect();return [(e.clientX-r.l
 function activeRows(){
  if(screen==='menu')return menuLayout().rows;
  if(screen==='settings')return settingsLayout().rows;
+ if(screen==='play'&&boxOpen())return boxLayout().rows;
  return null;
 }
 function setCursor(i){if(screen==='menu')cursor=i;else if(screen==='settings')settingsCursor=i;else boxCursor=i;}
@@ -75,11 +108,26 @@ function draw(now){
  if(screen==='play'){
   drawSprites(ctx,assets,PLAY_SCENERY,now);drawDim(ctx);
   const k=LAYOUT.cabinet;drawBox(ctx,k.x,k.y,k.w,k.h,C.royal);
+  drawBoard(ctx,game,{now,flash,offcut});
+  drawPanel(ctx,game,{remaining:game.duration-game.elapsed,label:diff.label,message:now<messageUntil||!game.active()?message:`FINISH FLOOR ${game.height+1}.`});
+  if(boxOpen()){
+   const won=game.status==='won',title=game.paused?'PAUSED':won?'TOPPED OUT':"TIME'S UP";
+   const lines=game.paused?['P TO RESUME']:[`${game.height}/${game.target} FLOORS`,`${game.cuts} CUTBACKS`];
+   drawItems(ctx,boxLayout(),boxCursor,now,{title,lines});
+  }
   return;
  }
  drawSprites(ctx,assets,MENU_SCENERY,now);drawLogo(ctx,assets);
  if(screen==='menu'){drawItems(ctx,menuLayout(),cursor,now);drawControls(ctx);}
  else drawItems(ctx,settingsLayout(),settingsCursor,now);
 }
-function frame(now){last=now;draw(now);requestAnimationFrame(frame);}
+function frame(now){
+ const dt=Math.min(100,Math.max(0,now-last));last=now;
+ if(screen==='play'){
+  const wasPlaying=game.status==='playing';
+  game.update(dt,soft);handleEvents(now);
+  if(wasPlaying&&game.status!=='playing'){overSince=now;boxCursor=0;soft=false;tone(game.status==='won'?780:90,.3);}
+ }
+ draw(now);requestAnimationFrame(frame);
+}
 requestAnimationFrame(frame);
