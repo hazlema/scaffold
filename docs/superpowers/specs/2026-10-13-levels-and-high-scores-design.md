@@ -71,7 +71,7 @@ Turn a single timed build into a **run**: clear a level by reaching its target i
 - **Boxes** reuse `drawItems` and `drawBox` from `render.js`:
   - **LEVEL CLEAR:** title `LEVEL n CLEAR`, line `m:ss LEFT`. No rows, so it is drawn with a box-only helper.
   - **RUN OVER and entry:** title `RUN OVER`, the summary line, the score at scale 3, and three letter slots at scale 3 when entering.
-  - **Table:** fits inside 300×200, centred on the screen. A dim dither sits behind it during play. Ten rows at scale 1, with columns for rank, initials, score (right-aligned), difficulty letter and `L5`.
+  - **Table:** fits inside 300×200, centred on the screen. A dim dither sits behind it during play. Ten rows at scale 2 (they fit, and read better than scale 1), with columns for rank, initials, score (right-aligned), difficulty letter and `L5`.
 
 ## Code structure
 
