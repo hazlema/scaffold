@@ -1,7 +1,8 @@
 // Board geometry and all canvas drawing for the 480x270 screen.
 import {WIDTH,HEIGHT,LANE,SHAPES,onBoard} from './engine.js';
 import {C,PIECES,BEVEL,LIGHT_PIECES} from './palette.js';
-import {drawText,wrap} from './font.js';
+import {drawText,wrap,measure} from './font.js';
+import {scoreRow} from './scores.js';
 import {clock} from './ui.js';
 
 export const LAYOUT={W:480,H:270,BX:156,BY:14,cabinet:{x:150,y:8,w:159,h:255},panel:{x:318,y:8,w:154,h:255}};
@@ -51,8 +52,9 @@ export function drawItems(ctx,box,cursor,now,{title='',lines=[]}={}){
   const sel=i===cursor;
   ctx.fillStyle=sel?C.yellow:C.indigo;ctx.fillRect(r.x,r.y,r.w,r.h);
   ctx.fillStyle=sel?C.indigo:C.navy;ctx.fillRect(r.x+1,r.y+1,r.w-2,r.h-2);
-  drawText(ctx,r.label,r.x+r.w/2,r.y+3,C.white,2,'center');
-  if(sel&&Math.floor(now/400)%2===0)drawText(ctx,'▶',r.x+4,r.y+3,C.yellow,2);
+  const s=box.scale??2;
+  drawText(ctx,r.label,r.x+r.w/2,r.y+3,C.white,s,'center');
+  if(sel&&Math.floor(now/400)%2===0)drawText(ctx,'▶',r.x+4,r.y+3,C.yellow,s);
  });
 }
 
@@ -114,25 +116,26 @@ export function drawControls(ctx){
 const ARROWS={se:['#....','.#...','..#.#','...##','..###'],sw:['....#','...#.','#.#..','##...','###..']};
 function bitmap(ctx,rows,x,y,color){ctx.fillStyle=color;rows.forEach((row,j)=>[...row].forEach((ch,i)=>{if(ch==='#')ctx.fillRect(x+i,y+j,1,1);}));}
 function cross(ctx,x,y,color){ctx.fillStyle=color;for(let i=0;i<6;i++){ctx.fillRect(x+4+i,y+4+i,1,1);ctx.fillRect(x+9-i,y+4+i,1,1);}}
-// Dashed guide line across the board at the top of row r, labelled outside the cabinet.
-function guide(ctx,r,color,label,dy=0){
- const y=rowTop(r),{BX}=LAYOUT;ctx.fillStyle=color;
- for(let x=BX-3;x<BX+150;x+=4)ctx.fillRect(x,y,2,1);
- const w=label.length*6-1,lx=LAYOUT.cabinet.x-3-w;
- ctx.fillStyle=C.black;ctx.fillRect(lx-2,y-4+dy,w+4,11);
- drawText(ctx,label,lx,y-2+dy,color);
-}
-export function drawBoard(ctx,game,{now=0,flash=null,offcut=null}={}){
- const solidFrom=HEIGHT-game.height;
+   // Guide line across the board at the top of row r, labelled outside the cabinet; solid lines are 2 px.
+   function guide(ctx,r,color,label,{dy=0,solid=false}={}){
+    const y=rowTop(r),{BX}=LAYOUT;ctx.fillStyle=color;
+    if(solid)ctx.fillRect(BX-3,y-1,153,2);
+    else for(let x=BX-3;x<BX+150;x+=4)ctx.fillRect(x,y,2,1);
+    const w=label.length*6-1,lx=LAYOUT.cabinet.x-3-w;
+    ctx.fillStyle=C.black;ctx.fillRect(lx-2,y-4+dy,w+4,11);
+    drawText(ctx,label,lx,y-2+dy,color);
+   }
+   export function drawBoard(ctx,game,{now=0,flash=null,offcut=null}={}){
+ const solidFrom=HEIGHT-game.height,goalR=HEIGHT-game.target;
  for(let r=0;r<HEIGHT;r++){
-  for(let c=0;c<WIDTH;c++){const {x,y}=cellXY(c,r),v=game.board[r][c];ctx.drawImage(v?tile('solid',PIECES[v-1]):tile('outline',r>=solidFrom?C.indigo:C.navy),x,y);}
+  for(let c=0;c<WIDTH;c++){const {x,y}=cellXY(c,r),v=game.board[r][c];ctx.drawImage(v?tile('solid',PIECES[v-1]):tile('outline',r>=solidFrom?C.indigo:r<goalR?C.black:C.navy),x,y);}
   if(game.lanes)for(const c of [-1,WIDTH]){const {x,y}=cellXY(c,r);ctx.drawImage(tile('dashed',C.navy),x,y);}
  }
  ctx.fillStyle=C.orange;// sawtooth foundation under the bottom row
  for(let c=0;c<WIDTH;c++){const {x,y}=cellXY(c,HEIGHT-1);HEX_BOTTOM.forEach((by,i)=>ctx.fillRect(x+i,y+by+1,1,2));}
  const targetR=HEIGHT-game.target,limitR=game.limitRow();
- guide(ctx,targetR,C.yellow,'TOP');
- if(limitR>0)guide(ctx,limitR,C.hotpink,'REACH',limitR===targetR?11:0);
+ guide(ctx,targetR,C.yellow,'GOAL',{solid:true});
+ if(limitR>0)guide(ctx,limitR,C.hotpink,'REACH',{dy:limitR===targetR?11:0});
  if(game.status==='playing'&&!game.pending&&!game.jammed&&game.piece){
   const land=game.landing(),over=game.overReach(land),col=PIECES[game.piece.id];
   for(const {c,r} of game.cells(land)){const {x,y}=cellXY(c,r);
@@ -155,19 +158,56 @@ export function drawMini(ctx,id,cx,cy){
  const ox=Math.round(cx-(Math.min(...xs)+Math.max(...xs)+HEX_W)/2),oy=Math.round(cy-(Math.min(...ys)+Math.max(...ys)+HEX_H)/2);
  for(const [x,y] of pts)ctx.drawImage(tile('solid',PIECES[id]),ox+x,oy+y);
 }
-export function drawPanel(ctx,game,{remaining,label,message}){
- const {x,y,w,h}=LAYOUT.panel,L=x+10;
- drawBox(ctx,x,y,w,h);
- drawText(ctx,'TIME',L,y+10,C.cream);
- drawText(ctx,clock(remaining),L,y+20,remaining<60000?C.hotpink:C.white,3);
- drawText(ctx,'FLOORS',L,y+50,C.cream);
- drawText(ctx,`${game.height}/${game.target}`,L,y+60,C.white,3);
- drawText(ctx,'CUTBACKS',L,y+90,C.cream);
- drawText(ctx,String(game.cuts),L,y+100,C.white,2);
- drawText(ctx,'NEXT',L,y+122,C.cream);
- drawMini(ctx,game.next,x+w/2,y+156);
- if(game.piece&&game.active()&&game.fits(game.lower()))drawText(ctx,game.stepDir()==='se'?'TICK ▶ SE':'TOCK ◀ SW',L,y+190,C.yellow);
- drawText(ctx,label,L,y+202,C.lavender);
- drawText(ctx,`GAPS ${game.gaps} REACH ${game.reach}`,L,y+212,C.lavender);
- wrap(message,22,3).forEach((line,i)=>drawText(ctx,line,L,y+226+i*9,C.white));
-}
+   export const PANEL_LINES={time:10,timeDigits:20,level:48,levelDigits:58,score:76,scoreDigits:86,floors:104,floorsDigits:114,next:134,mini:162,beat:190,diff:202,rules:212,message:226};
+   export function drawPanel(ctx,game,{remaining,label,message,level=1,score=0}){
+    const {x,y,w,h}=LAYOUT.panel,L=x+10,P=PANEL_LINES;
+    drawBox(ctx,x,y,w,h);
+    drawText(ctx,'TIME',L,y+P.time,C.cream);
+    drawText(ctx,clock(remaining),L,y+P.timeDigits,remaining<60000?C.hotpink:C.white,3);
+    drawText(ctx,'LEVEL',L,y+P.level,C.cream);
+    drawText(ctx,String(level),L,y+P.levelDigits,C.white,2);
+    drawText(ctx,'SCORE',L,y+P.score,C.cream);
+    drawText(ctx,String(score),L,y+P.scoreDigits,C.white,2);
+    drawText(ctx,'FLOORS',L,y+P.floors,C.cream);
+    drawText(ctx,`${game.height}/${game.target}`,L,y+P.floorsDigits,C.white,2);
+    drawText(ctx,'NEXT',L,y+P.next,C.cream);
+    drawMini(ctx,game.next,x+w/2,y+P.mini);
+    if(game.piece&&game.active()&&game.fits(game.lower()))drawText(ctx,game.stepDir()==='se'?'TICK ▶ SE':'TOCK ◀ SW',L,y+P.beat,C.yellow);
+    drawText(ctx,`${label}  CUTS ${game.cuts}`,L,y+P.diff,C.lavender);
+    drawText(ctx,`GAPS ${game.gaps} REACH ${game.reach}`,L,y+P.rules,C.lavender);
+    wrap(message,22,3).forEach((line,i)=>drawText(ctx,line,L,y+P.message+i*9,C.white));
+   }
+   
+   // A box over the board with a title, info lines, an optional big number and optional initials slots.
+   export const BANNER={cx:229,w:140,y:70};
+   export const bannerHeight=({lines=[],big='',slots=null})=>28+lines.length*9+(big?27:0)+(slots?30:0)+6;
+   export function drawBanner(ctx,{title,lines=[],big='',slots=null,slot=-1,now=0}){
+    const h=bannerHeight({lines,big,slots}),x=Math.round(BANNER.cx-BANNER.w/2);
+    drawBox(ctx,x,BANNER.y,BANNER.w,h);
+    let cy=BANNER.y+8;
+    drawText(ctx,title,BANNER.cx,cy,C.yellow,2,'center');cy+=20;
+    for(const l of lines){drawText(ctx,l,BANNER.cx,cy,C.white,1,'center');cy+=9;}
+    if(big){cy+=3;drawText(ctx,big,BANNER.cx,cy,C.white,3,'center');cy+=24;}
+    if(slots){
+     cy+=4;const x0=Math.round(BANNER.cx-measure(slots.join(''),3)/2);
+     slots.forEach((ch,i)=>{
+      const sx=x0+i*18;drawText(ctx,ch,sx,cy,i===slot?C.yellow:C.white,3);
+      const on=i!==slot||Math.floor(now/300)%2===0;
+      if(on){ctx.fillStyle=i===slot?C.yellow:C.lavender;ctx.fillRect(sx,cy+23,15,i===slot?2:1);}
+     });
+    }
+   }
+   // The top-10 table: rank, initials, score, difficulty letter, level. The new entry blinks.
+   export const SCORE_TABLE={x:90,y:6,w:300,h:210,rowY:44,rowH:16};
+   export function drawScoreTable(ctx,entries,highlight,now,{title='HIGH SCORES',line=''}={}){
+    const t=SCORE_TABLE,cx=t.x+t.w/2;
+    drawBox(ctx,t.x,t.y,t.w,t.h);
+    drawText(ctx,title,cx,t.y+8,C.yellow,2,'center');
+    if(line)drawText(ctx,line,cx,t.y+28,C.cream,1,'center');
+    if(!entries.length)drawText(ctx,'NO SCORES YET',cx,t.y+100,C.lavender,2,'center');
+    entries.forEach((x,i)=>{
+     const color=i===highlight?(Math.floor(now/300)%2===0?C.yellow:C.orange):C.white;
+     drawText(ctx,scoreRow(i,x),t.x+18,t.y+t.rowY+i*t.rowH,color,2);
+    });
+   }
+   

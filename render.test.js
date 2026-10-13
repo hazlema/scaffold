@@ -1,6 +1,8 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {LAYOUT,HEX_W,HEX_H,HEX_PIXELS,HEX_BOTTOM,edgeOf,cellXY} from './render.js';
+import {LAYOUT,HEX_W,HEX_H,HEX_PIXELS,HEX_BOTTOM,edgeOf,cellXY,PANEL_LINES,BANNER,bannerHeight,SCORE_TABLE} from './render.js';
+import {layoutBox} from './ui.js';
+import {measure} from './font.js';
 import {Game,WIDTH,HEIGHT} from './engine.js';
 
 test('hex tiles interlock: no pixel is drawn twice and the interior has no holes',()=>{
@@ -37,4 +39,28 @@ test('bevel edges: top-left facets are light, bottom-right dark, the middle plai
  assert.equal(edgeOf(7,7),null);
  assert.equal(HEX_BOTTOM.length,HEX_W);
  assert.equal(Math.max(...HEX_BOTTOM),HEX_H-1);
+});
+
+
+test('readout panel lines stay inside the panel',()=>{
+ const p=LAYOUT.panel,L=PANEL_LINES;
+ assert.ok(L.timeDigits+21<=L.level&&L.levelDigits+14<=L.score&&L.scoreDigits+14<=L.floors&&L.floorsDigits+14<=L.next);
+ assert.ok(L.message+2*9+7<=p.h-3,'message runs past the panel');
+ assert.ok(measure('00:00',3)<=p.w-20&&measure('12/12',2)<=p.w-20&&measure('MEDIUM  CUTS 99',1)<=p.w-20);
+});
+test('banners fit over the board, even with summary, score and initials',()=>{
+ const h=bannerHeight({lines:['MEDIUM  LEVEL 12','144 FLOORS'],big:'288',slots:['A','B','C']});
+ const k=LAYOUT.cabinet;
+ assert.ok(BANNER.y>=k.y&&BANNER.y+h<=k.y+k.h,`banner height ${h}`);
+ assert.ok(BANNER.cx-BANNER.w/2>=k.x&&BANNER.cx+BANNER.w/2<=k.x+k.w);
+ for(const t of ['RUN OVER','LEVEL 12'])assert.ok(measure(t,2)<=BANNER.w-8,t);
+ assert.ok(measure('MEDIUM  LEVEL 12',1)<=BANNER.w-8);
+});
+test('a full score table, its summary line and its buttons fit the screen',()=>{
+ const t=SCORE_TABLE;
+ assert.ok(t.y+t.rowY+9*t.rowH+14<=t.y+t.h-3,'tenth row runs past the table');
+ assert.ok(18+measure('10  A 1  99999  H  L99',2)<=t.w-3,'rows too wide');
+ assert.ok(measure('MEDIUM  LEVEL 12  144 FLOORS  SCORE 288',1)<=t.w-8);
+ const actions=layoutBox(['AGAIN','MENU'],{y:220,scale:1,minWidth:120});
+ assert.ok(t.y+t.h<=actions.y&&actions.y+actions.h<=270);
 });
