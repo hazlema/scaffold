@@ -1,14 +1,8 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {DIFFICULTIES,difficulty,fitScale,layoutBox,hit,menuKey,SETTING_ROWS,settingLabel,changeSetting,clock,startInitials,initialsKey,INITIAL_CHARS} from './ui.js';
+import {fitScale,layoutBox,hit,menuKey,SETTING_ROWS,settingLabel,changeSetting,clock,startInitials,initialsKey,INITIAL_CHARS} from './ui.js';
 import {DEFAULTS} from './settings.js';
 
-test('difficulty table matches the game rules',()=>{
- assert.deepEqual(DIFFICULTIES.map(d=>d.label),['EASY','MEDIUM','HARD']);
- assert.deepEqual(difficulty(2),{gaps:2,reach:6,duration:600000});
- assert.deepEqual(difficulty(1),{gaps:1,reach:5,duration:540000});
- assert.deepEqual(difficulty(0),{gaps:0,reach:4,duration:480000});
-});
 test('scale is a whole number of at least 1 for any window',()=>{
  assert.equal(fitScale(1920,1080),4);
  assert.equal(fitScale(1919,1080),3);
@@ -60,19 +54,13 @@ test('clock formats remaining time and never goes negative',()=>{
  assert.equal(clock(0),'00:00');
  assert.equal(clock(-5000),'00:00');
 });
-test('a game end is noticed exactly once, wherever it happened, and results stay locked briefly',async()=>{
- const {endWatcher,canSelect}=await import('./ui.js');
- const watch=endWatcher(),a={status:'playing'},b={status:'playing'};
- assert.equal(watch(null),false);
- assert.equal(watch(a),false);
- a.status='won';// e.g. a winning hard drop inside a key handler
- assert.equal(watch(a),true);
- assert.equal(watch(a),false);
- b.status='lost';assert.equal(watch(b),true);
- assert.equal(canSelect(false,1000,1500),false);
- assert.equal(canSelect(false,1000,1601),true);
- assert.equal(canSelect(true,1000,1001),true);// the pause box is never locked
-});
+    test('results stay locked briefly; the pause box never locks',async()=>{
+     const {canSelect}=await import('./ui.js');
+     assert.equal(canSelect(false,1000,1500),false);
+     assert.equal(canSelect(false,1000,1601),true);
+     assert.equal(canSelect(true,1000,1001),true);
+    });
+    
 test('the scale is whole device pixels at fractional display scaling',async()=>{
  const {fitScale}=await import('./ui.js');
  assert.equal(fitScale(1536,864,1.25),4);// 125% laptop: 4 device px per game pixel

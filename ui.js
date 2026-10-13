@@ -1,13 +1,8 @@
 // Pure UI logic: no canvas, no DOM. Screen units are logical pixels of the 480x270 canvas.
 import {measure} from './font.js';
 
-export const DIFFICULTIES=[{label:'EASY',gaps:2},{label:'MEDIUM',gaps:1},{label:'HARD',gaps:0}];
-// Difficulty sets the gaps a row may keep, the reach above the top solid floor, and the clock.
-export const difficulty=gaps=>({gaps,reach:[4,5,6][gaps],duration:[8,9,10][gaps]*60000});
 // Whole device pixels per game pixel, so 125% display scaling still gives square pixels.
 export const fitScale=(w,h,dpr=1)=>Math.max(1,Math.floor(Math.min(w*dpr/480,h*dpr/270)));
-// A game can end inside update() or inside a key handler (a winning hard drop): report each end once.
-export function endWatcher(){let seen=null;return game=>{if(!game||game.status==='playing'||seen===game)return false;seen=game;return true;};}
 export const RESULT_LOCK_MS=600;
 // The results box ignores selects briefly so a mashed drop key cannot skip it; the pause box never locks.
 export const canSelect=(paused,endedAt,now)=>paused||now-endedAt>RESULT_LOCK_MS;
