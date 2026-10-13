@@ -178,7 +178,10 @@ function frame(now){
  const dt=Math.min(100,Math.max(0,now-last));last=now;
  if(screen==='play'){
   if(phase==='playing'){game.update(dt,soft);handleEvents(now);checkEnd(now);}
-  else if(phase==='clear'&&now-phaseAt>=CLEAR_MS){run=onLevelWon(run);startLevel();note(`LEVEL ${run.level}. DROPS ARE FASTER.`);}
+  else if(phase==='clear'&&now-phaseAt>=CLEAR_MS){
+   run=onLevelWon(run);startLevel();note(`LEVEL ${run.level}. DROPS ARE FASTER.`);
+   if(!document.hasFocus())game.paused=true;// they left during the banner: no blur event will come, so open paused
+  }
  }
  draw(now);requestAnimationFrame(frame);
 }

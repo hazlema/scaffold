@@ -69,11 +69,11 @@ test('the scale is whole device pixels at fractional display scaling',async()=>{
 });
 
 test('initials start from the last used, else AAA, and cycle letters, digits and space both ways',()=>{
- assert.deepEqual(startInitials('MBH'),{chars:['M','B','H'],slot:0});
- assert.deepEqual(startInitials('bad'),{chars:['A','A','A'],slot:0});
- assert.deepEqual(startInitials(undefined),{chars:['A','A','A'],slot:0});
+ assert.deepEqual(startInitials('MBH'),{chars:['M','B','H'],slot:0,armed:false});
+ assert.deepEqual(startInitials('bad'),{chars:['A','A','A'],slot:0,armed:false});
+ assert.deepEqual(startInitials(undefined),{chars:['A','A','A'],slot:0,armed:false});
  assert.equal(INITIAL_CHARS,'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 ');
- const at=(chars,slot=0)=>({chars:[...chars],slot});
+ const at=(chars,slot=0)=>({chars:[...chars],slot,armed:true});
  assert.deepEqual(initialsKey(at('AAA'),'ArrowUp',false).state.chars,['B','A','A']);
  assert.deepEqual(initialsKey(at('AAA'),'ArrowDown',false).state.chars,[' ','A','A']);
  assert.deepEqual(initialsKey(at('ZAA'),'ArrowUp',false).state.chars,['0','A','A']);
@@ -93,4 +93,13 @@ test('initials: slots move with arrows and Enter, the third Enter saves, held ke
  assert.equal(initialsKey(r.state,' ',false).done,false);// Space is the drop key: never confirms
  r=initialsKey(r.state,'Enter',false);assert.equal(r.done,true);
  assert.deepEqual(r.state.chars,['M','B','H']);
+});
+
+test('keys still held from play cannot touch the initials until one fresh press',()=>{
+ let s=startInitials('MBH');
+ for(const k of ['ArrowDown','ArrowUp','ArrowLeft','Enter']){const r=initialsKey(s,k,true);assert.deepEqual(r.state.chars,['M','B','H']);assert.equal(r.state.slot,0);assert.equal(r.done,false);}
+ let r=initialsKey(s,'ArrowUp',false);// the first fresh press counts and arms entry
+ assert.deepEqual(r.state.chars,['N','B','H']);assert.equal(r.state.armed,true);
+ r=initialsKey(r.state,'ArrowUp',true);// now a held arrow spins as usual
+ assert.deepEqual(r.state.chars,['O','B','H']);
 });

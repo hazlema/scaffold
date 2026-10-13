@@ -39,16 +39,19 @@ export function clock(ms){const s=Math.max(0,Math.ceil(ms/1000));return `${Strin
 
 // Arcade initials: three slots; up/down spin the character, left/right or Enter move, Enter on the last saves.
 export const INITIAL_CHARS='ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 ';
-export const startInitials=last=>({chars:[...(typeof last==='string'&&/^[A-Z0-9 ]{3}$/.test(last)?last:'AAA')],slot:0});
+export const startInitials=last=>({chars:[...(typeof last==='string'&&/^[A-Z0-9 ]{3}$/.test(last)?last:'AAA')],slot:0,armed:false});
 export function initialsKey(state,key,repeat){
- const {chars,slot}=state,n=INITIAL_CHARS.length,stay={state,done:false};
+ const stay={state,done:false};
+ // Keys still held from play (a soft drop, say) arrive as repeats: ignore them until one fresh press.
+ if(!state.armed){if(repeat)return stay;state={...state,armed:true};}
+ const {chars,slot}=state,n=INITIAL_CHARS.length,at=(c,sl)=>({state:{chars:c,slot:sl,armed:true},done:false});
  if(key==='ArrowUp'||key==='ArrowDown'){
   const next=[...chars];next[slot]=INITIAL_CHARS[(INITIAL_CHARS.indexOf(chars[slot])+(key==='ArrowUp'?1:-1)+n)%n];
-  return {state:{chars:next,slot},done:false};
+  return at(next,slot);
  }
- if(key==='ArrowLeft')return {state:{chars,slot:Math.max(0,slot-1)},done:false};
- if(repeat)return stay;// a held Enter or right arrow never moves on or saves
- if(key==='ArrowRight')return {state:{chars,slot:Math.min(2,slot+1)},done:false};
- if(key==='Enter')return slot===2?{state,done:true}:{state:{chars,slot:slot+1},done:false};
- return stay;
+ if(key==='ArrowLeft')return at(chars,Math.max(0,slot-1));
+ if(repeat)return {state,done:false};// a held Enter or right arrow never moves on or saves
+ if(key==='ArrowRight')return at(chars,Math.min(2,slot+1));
+ if(key==='Enter')return slot===2?{state,done:true}:at(chars,slot+1);
+ return {state,done:false};
 }
