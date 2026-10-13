@@ -22,13 +22,15 @@ The included server binds to your own computer only and serves the game's public
 
 ## Play
 
-Arrow left/right: steer. Up or X: rotate clockwise 60°. Z: rotate counterclockwise. Down: descend faster. Shift (left or right): change beat, so the next step down goes the other diagonal (SW instead of SE, or the reverse) and the zigzag continues from there. Space: hard drop. P/Escape: pause. Leaving the browser pauses automatically. The white dot marks the pivot and its arrow points the way the next step down will go (SE or SW). With sound on, each step plays a tick (SE) or a tock (SW), so a beat change is heard as a doubled sound; outlined cells show the landing position. On-screen buttons also work.
+Arrow left/right: steer. Up or X: rotate clockwise 60°. Z: rotate counterclockwise. Down: descend faster. Shift (left or right): change beat, so the next step down goes the other diagonal (SW instead of SE, or the reverse). Space: hard drop. P/Escape: pause. Leaving the browser pauses automatically. The white dot marks the pivot and its arrow points the way the next step will go; the readout panel shows TICK (SE) or TOCK (SW). The outline marks the landing position. Menus work with the arrow keys and Enter, or the mouse.
 
-**Difficulty** (Medium by default) sets how many open hexes a row may have and still count as solid: Easy 2, Medium 1, Hard 0. A solid row counts as a floor, sets off the cutback check when it is sealed, and is never treated as a gap below a sealed row. Its open hexes stay open and can still be filled later. Difficulty also sets the **reach limit**: hexes may sit at most Easy 6, Medium 5, Hard 4 rows above the top solid floor, counting the unfinished floor as row 1. A red dashed line marks the limit and climbs as floors are finished; the landing outline turns red when a drop would cross it, counting any floors that drop would itself finish. Locking a piece above the line sets off a cutback ("TOO HIGH") that removes everything above the lowest unfinished floor.
+**Look:** everything is drawn at 480×270 in a fixed 16-colour palette, scaled up with square pixels, under drifting CRT scanlines (strength in Settings). Source art lives in `art/`; `python3 scripts/assets.py` (needs Pillow) converts it into `assets/`. Run it again only when the art changes.
 
-**Edge lanes** (on by default, toggle in setup): a dashed lane runs beside each wall. A piece may steer partly into a lane to reach awkward wall pockets, but it must keep at least one hex on the board. Lane hexes are drawn faint, never collide, and are cut off when the piece locks; the landing outline marks them with a red ×. Holding an arrow stops at the visible wall; press again to enter a lane. New deliveries always appear fully on the board, and rotation prefers on-board positions before using a lane.
+**Difficulty** is chosen on the title menu (EASY, MEDIUM or HARD; the cursor starts on MEDIUM). It sets how many open hexes a row may have and still count as solid: Easy 2, Medium 1, Hard 0. A solid row counts as a floor, sets off the cutback check when it is sealed, and is never treated as a gap below a sealed row. Its open hexes stay open and can still be filled later. Difficulty also sets the **reach limit**: hexes may sit at most Easy 6, Medium 5, Hard 4 rows above the top solid floor, counting the unfinished floor as row 1. A red dashed line marks the limit and climbs as floors are finished; the landing outline turns red when a drop would cross it, counting any floors that drop would itself finish. Locking a piece above the line sets off a cutback ("TOO HIGH") that removes everything above the lowest unfinished floor.
 
-Build eight consecutive solid floors from the sawtooth foundation before the clock runs out: 10 minutes on Easy, 9 on Medium, 8 on Hard. The setup offers 12- and 16-floor targets too. The clock is a deadline: reaching the target wins; running out of time loses. Complete floors stay in place.
+**Edge lanes** (on by default, toggle in Settings): a dashed lane runs beside each wall. A piece may steer partly into a lane to reach awkward wall pockets, but it must keep at least one hex on the board. Lane hexes are drawn faint, never collide, and are cut off when the piece locks; the landing outline marks them with a red ×. Holding an arrow stops at the visible wall; press again to enter a lane. New deliveries always appear fully on the board, and rotation prefers on-board positions before using a lane.
+
+Build eight consecutive solid floors from the sawtooth foundation before the clock runs out: 10 minutes on Easy, 9 on Medium, 8 on Hard. Settings offers 12- and 16-floor targets too, along with sound and scanline strength; settings are remembered in the browser. The clock is a deadline: reaching the target wins; running out of time loses. Complete floors stay in place.
 
 A newly completed row triggers inspection of every row below it. If there is a gap, retain the lowest incomplete row and everything below it; remove all placed cells above it. No collapse, shifting, or grinding. Simply placing above a gap never triggers deletion. The brief cutback animation locks input while the clock continues.
 
@@ -43,9 +45,11 @@ A blocked entry checks the built tower for gaps, excluding empty headroom. If th
 ## Project files
 
 - `engine.js` — hex geometry, piece generation, construction rules, timer, and cutbacks.
-- `app.js` — canvas rendering, keyboard/button controls, and optional synthesized audio.
-- `engine.test.js` — rule and regression tests, including side-wall descent and blocked-entry recovery.
-- `index.html` and `style.css` — arcade interface.
+- `app.js` — screens (menu, settings, play), keyboard and mouse input, frame loop, and optional synthesized audio.
+- `render.js` — board geometry and all drawing on the 480×270 canvas; `ui.js` — menu layout and keys; `font.js` — 5×7 bitmap font; `palette.js` — the 16 colours; `settings.js` — saved settings; `assets.js` — art loader.
+- `art/` — source art; `scripts/assets.py` converts it into `assets/`.
+- `*.test.js` — rule and regression tests (`engine.test.js`, including side-wall descent and blocked-entry recovery) plus tests for the font, settings, UI logic, board geometry and assets.
+- `index.html` and `style.css` — the canvas, integer scaling, and the scanline layer.
 - `server.mjs` — dependency-free local preview server.
 
 This is an early playable prototype. Target height, draw weighting, and difficulty are still being tuned.
@@ -54,4 +58,4 @@ This is an early playable prototype. Target height, draw weighting, and difficul
 
 Import this GitHub repository into Netlify. The included `netlify.toml` supplies the build command and publish directory automatically. No environment variables are needed.
 
-The build command (`npm run build`, or `node scripts/build.mjs`) copies only the four public game files into `dist/`, keeping tests, repository files, and the local server out of the deployed site. You can also upload the generated `dist/` directory manually.
+The build command (`npm run build`, or `node scripts/build.mjs`) copies only the public game files and `assets/` into `dist/`, keeping tests, repository files, and the local server out of the deployed site. You can also upload the generated `dist/` directory manually.
