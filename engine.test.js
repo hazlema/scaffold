@@ -218,3 +218,13 @@ test('the clock length comes from the game, not a fixed five minutes',()=>{
  const g=new Game({duration:8*60000});g.update(DURATION+1000);assert.equal(g.status,'playing');
  g.update(3*60000);assert.equal(g.status,'lost');
 });
+
+test('dropMs sets the gravity interval; the default stays 950 ms',()=>{
+ const g=new Game({dropMs:500,lanes:false}),r=g.piece.r;
+ g.update(499);assert.equal(g.piece.r,r);
+ g.update(1);assert.equal(g.piece.r,r+1);
+ const d=new Game({lanes:false}),r0=d.piece.r;
+ assert.equal(d.dropMs,950);
+ d.update(949);assert.equal(d.piece.r,r0);
+ d.update(1);assert.equal(d.piece.r,r0+1);
+});
