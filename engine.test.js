@@ -5,7 +5,6 @@ test('piece set contains three trihexes and seven tetrahexes, each restored by s
 test('placing above a gap alone does not cut the tower',()=>{const g=new Game();g.board[HEIGHT-2][3]=1;g.resolve([]);assert.equal(g.board[HEIGHT-2][3],1);assert.equal(g.cuts,0);});
 test('completing an upper row deletes everything above lowest gap and preserves that row',()=>{const g=new Game();g.board[HEIGHT-1].fill(1);g.board[HEIGHT-2][0]=2;g.board[HEIGHT-3].fill(3);g.board[HEIGHT-5][2]=4;g.resolve([HEIGHT-3]);assert.equal(g.cuts,1);assert.equal(g.board[HEIGHT-2][0],2);assert.ok(g.board[HEIGHT-1].every(v=>v===1));assert.ok(g.board.slice(0,HEIGHT-2).flat().every(v=>v===0));assert.equal(g.height,1);});
 test('completed floors remain and reaching target wins',()=>{const g=new Game({target:2});g.board[HEIGHT-1].fill(1);g.board[HEIGHT-2].fill(2);g.resolve([HEIGHT-2]);assert.equal(g.cuts,0);assert.equal(g.status,'won');assert.equal(g.height,2);});
-test('fixed blockers survive cuts and count toward floor completion',()=>{const g=new Game();g.blockers[HEIGHT-4][2]=true;g.blockers[HEIGHT-1][0]=true;g.board[HEIGHT-1].fill(1,1);g.board[HEIGHT-3].fill(1);g.resolve([HEIGHT-3]);assert.equal(g.height,1);assert.equal(g.blockers[HEIGHT-4][2],true);});
 test('gravity and rotations cannot overlap walls or settled cells',()=>{const g=new Game({random:()=>0});for(let i=0;i<20;i++)g.move(-1);assert.ok(g.fits());g.drop();assert.equal(g.placed,1);assert.equal(g.board.flat().filter(Boolean).length,4);assert.ok(g.fits());});
 test('pause freezes simulation and running out of time loses',()=>{const g=new Game();g.paused=true;g.update(1000);assert.equal(g.elapsed,0);g.paused=false;g.elapsed=DURATION-10;g.update(20);assert.equal(g.status,'lost');});
 
@@ -30,9 +29,9 @@ test('without lanes, side-wall contact does not start the lock timer while desce
  for(let i=0;i<4;i++)g.update(100);
  assert.equal(g.piece.r,4);assert.ok(g.fits());
 });
-test('without lanes, the alternative direction cannot pass through a blocker',()=>{
+test('without lanes, the alternative direction cannot pass through a settled cell',()=>{
  const g=new Game({lanes:false});g.piece={id:0,cells:SHAPES[0].cells,q:-1,r:3};
- g.blockers[4][2]=true;assert.equal(g.down(),false);
+ g.board[4][2]=1;assert.equal(g.down(),false);
 });
 test('stack contact inside the board does not automatically slide sideways',()=>{
  const g=new Game();g.piece={id:0,cells:SHAPES[0].cells,q:2,r:3};
@@ -41,10 +40,10 @@ test('stack contact inside the board does not automatically slide sideways',()=>
 
 test('blocked entry cuts above the lowest gap and retries the same delivery',()=>{
  const g=new Game({target:20,random:()=>0});g.board.forEach(row=>row.fill(1));
- g.board[HEIGHT-3][2]=0;g.blockers[HEIGHT-5][4]=true;g.board[HEIGHT-5][4]=0;
+ g.board[HEIGHT-3][2]=0;
  const delivery=g.next;g.spawn();const preview=g.next;
  assert.equal(g.cuts,1);assert.equal(g.pending,850);assert.equal(g.board[HEIGHT-3][2],0);
- assert.equal(g.board[HEIGHT-3][3],1);assert.equal(g.blockers[HEIGHT-5][4],true);
+ assert.equal(g.board[HEIGHT-3][3],1);assert.equal(g.board[HEIGHT-5][4],0);
  g.update(850);assert.equal(g.status,'playing');assert.equal(g.jammed,false);assert.ok(g.fits());
  assert.equal(g.piece.id,delivery);assert.equal(g.next,preview);
 });
@@ -86,12 +85,12 @@ test('with lanes, gravity at a wall swings cells into the lane',()=>{
  const g=new Game();g.piece={id:0,cells:SHAPES[0].cells,q:-1,r:3};g.down();
  assert.deepEqual(g.cells().map(p=>[p.r,p.c]),[[3,-1],[4,0],[3,0],[4,1]]);
 });
-test('with lanes, blockers and settled cells still stop pieces, including one straddling a lane',()=>{
- const t=new Game({terrain:true});t.piece={id:7,cells:[[-1,0],[0,0],[1,0]],q:-3,r:14};
+test('with lanes, settled cells still stop pieces, including one straddling a lane',()=>{
+ const t=new Game();t.board[16][5]=1;t.piece={id:7,cells:[[-1,0],[0,0],[1,0]],q:-3,r:14};
  assert.deepEqual(t.cells(t.landing()).map(p=>[p.r,p.c]),[[15,3],[15,4],[15,5]]);
  const straddle={id:7,cells:[[-1,0],[0,0],[1,0]],q:-9,r:HEIGHT-1};
  const a=new Game();a.board[HEIGHT-1][0]=1;assert.equal(a.fits(straddle),false);
- const b=new Game();b.blockers[HEIGHT-1][1]=true;assert.equal(b.fits(straddle),false);
+ const b=new Game();b.board[HEIGHT-1][1]=1;assert.equal(b.fits(straddle),false);
 });
 test('a position needs at least one cell on the board',()=>{
  const g=new Game();g.piece={id:9,cells:[[0,0],[0,1]],q:-3,r:4};
@@ -167,4 +166,55 @@ test('the last cell of a two-deep notch at the left wall is reachable only with 
  const setup=g=>{g.board[HEIGHT-1].fill(1,1);g.board[HEIGHT-2].fill(1,1);};
  assert.deepEqual(fillers(setup,{r:HEIGHT-1,c:0},false),[]);
  assert.ok(fillers(setup,{r:HEIGHT-1,c:0},true).length>0);
+});
+test('changing beat swaps which diagonal each descent takes, and resets on the next piece',()=>{
+ const g=new Game({lanes:false});g.piece={id:8,cells:[[0,0]],q:3,r:2};
+ const col=()=>g.cells()[0].c,path=()=>{const cs=[];for(let i=0;i<4;i++){g.down();cs.push(col());}return cs;};
+ const start=col(),normal=path();
+ g.piece={id:8,cells:[[0,0]],q:3,r:2};assert.equal(g.flipBeat(),true);const flipped=path();
+ // From an even row the default goes SE (same column on the odd row); the flipped beat goes SW (one column left).
+ assert.deepEqual(normal,[start,start,start,start]);
+ assert.deepEqual(flipped,[start-1,start,start-1,start]);
+ g.drop();g.update(0);assert.ok(!g.piece.beat);
+});
+test('difficulty lets a row stay solid with up to `gaps` open cells',()=>{
+ for(const gaps of [0,1,2]){
+  const g=new Game({target:3,gaps});
+  g.board[HEIGHT-1].fill(1);g.board[HEIGHT-1][0]=g.board[HEIGHT-1][5]=0;// two holes in floor 1
+  g.board[HEIGHT-2].fill(2);g.board[HEIGHT-2][3]=0;// one hole in floor 2
+  g.board[HEIGHT-3].fill(3);g.resolve([HEIGHT-3]);
+  // Hard and Medium: floor 1 has too many holes, so sealing floor 3 cuts floors 2 and 3. Easy: all three stand and win.
+  if(gaps<2){assert.equal(g.cuts,1);assert.equal(g.height,0);assert.equal(g.board[HEIGHT-1][1],1);assert.equal(g.board[HEIGHT-2][0],0);}
+  else{assert.equal(g.cuts,0);assert.equal(g.height,3);assert.equal(g.status,'won');}
+ }
+ const m=new Game({gaps:1});m.board[HEIGHT-1].fill(1);m.board[HEIGHT-1][2]=0;m.board[HEIGHT-2].fill(2);m.board[HEIGHT-2][4]=0;m.resolve([HEIGHT-2]);
+ assert.equal(m.cuts,0);assert.equal(m.height,2);
+ const e=new Game({gaps:2});e.board[HEIGHT-1].fill(1,3);assert.equal(e.full(HEIGHT-1),false);// three holes is still a gap on Easy
+});
+test('each descent reports its diagonal, so a beat change shows up as a repeated direction',()=>{
+ const g=new Game({lanes:false});g.piece={id:8,cells:[[0,0]],q:3,r:2};g.events=[];
+ g.down();g.down();g.flipBeat();g.down();g.down();
+ assert.deepEqual(g.events.filter(e=>e.type==='step').map(e=>e.dir),['se','sw','sw','se']);
+});
+test('locking a hex above the reach limit cuts back to the lowest unfinished floor',()=>{
+ const g=new Game({lanes:false,reach:4});g.board[HEIGHT-1].fill(1);g.measure();// floor 1 solid; limit row is floor 5
+ assert.equal(g.limitRow(),HEIGHT-5);
+ g.board[HEIGHT-2][0]=2;g.board[HEIGHT-3][0]=2;
+ // A vertical patch stacked to floor 5 is fine; one reaching floor 6 is over.
+ const at=top=>({id:9,cells:[[0,0]],q:0-Math.floor(top/2),r:top});
+ assert.equal(g.overReach(at(HEIGHT-5)),false);assert.equal(g.overReach(at(HEIGHT-6)),true);
+ g.piece=at(HEIGHT-6);g.lock();
+ assert.equal(g.cuts,1);assert.equal(g.events.find(e=>e.type==='cut').reason,'reach');
+ assert.equal(g.board[HEIGHT-6][0],0);assert.equal(g.board[HEIGHT-3][0],0);assert.equal(g.board[HEIGHT-2][0],2);assert.equal(g.height,1);
+});
+test('a drop that finishes a floor gets the raised limit',()=>{
+ const g=new Game({lanes:false,reach:1});g.board[HEIGHT-1].fill(1);g.board[HEIGHT-1][7]=0;g.measure();// limit is the unfinished floor 1 itself
+ // A two-hex vertical piece filling floor 1's last hole reaches floor 2, allowed only because floor 1 completes.
+ const p={id:9,cells:[[0,0],[0,1]],q:7-Math.floor((HEIGHT-2)/2),r:HEIGHT-2};
+ assert.deepEqual(g.cells(p).map(({r,c})=>[r,c]),[[HEIGHT-2,7],[HEIGHT-1,7]]);
+ assert.equal(g.overReach(p),false);g.piece=p;g.lock();assert.equal(g.cuts,0);assert.equal(g.height,1);
+});
+test('the clock length comes from the game, not a fixed five minutes',()=>{
+ const g=new Game({duration:8*60000});g.update(DURATION+1000);assert.equal(g.status,'playing');
+ g.update(3*60000);assert.equal(g.status,'lost');
 });
