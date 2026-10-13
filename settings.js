@@ -1,11 +1,10 @@
 // Player settings, kept in localStorage. Anything unreadable falls back to the defaults.
+// The target height now comes from the difficulty (run.js), so an old saved target is ignored.
 export const KEY='scaffold.settings';
-export const DEFAULTS=Object.freeze({target:8,lanes:true,sound:false,scanlines:0.6});
-export const TARGETS=[8,12,16];
+export const DEFAULTS=Object.freeze({lanes:true,sound:false,scanlines:0.6});
 export function clean(raw){
  const s={...DEFAULTS};
  if(!raw||typeof raw!=='object'||Array.isArray(raw))return s;
- if(TARGETS.includes(raw.target))s.target=raw.target;
  if(typeof raw.lanes==='boolean')s.lanes=raw.lanes;
  if(typeof raw.sound==='boolean')s.sound=raw.sound;
  if(typeof raw.scanlines==='number'&&raw.scanlines>=0&&raw.scanlines<=1)s.scanlines=Math.round(raw.scanlines*10)/10;

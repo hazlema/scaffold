@@ -17,14 +17,15 @@ test('corrupt JSON and storage that throws give the defaults without crashing',(
  assert.equal(saveSettings(hostile,DEFAULTS),false);
 });
 test('invalid fields fall back one by one; valid ones survive',()=>{
- assert.deepEqual(clean({target:12,lanes:'yes',sound:true,scanlines:NaN}),{...DEFAULTS,target:12,sound:true});
+ assert.deepEqual(clean({target:12,lanes:'yes',sound:true,scanlines:NaN}),{...DEFAULTS,sound:true});
+ assert.equal('target' in clean({target:12}),false);// target now comes from the difficulty
  assert.deepEqual(clean({target:9,scanlines:1.5}),DEFAULTS);
  assert.equal(clean({scanlines:0.30000000000000004}).scanlines,0.3);
  assert.equal(clean({scanlines:0}).scanlines,0);
  assert.deepEqual(clean([]),DEFAULTS);
 });
 test('settings round-trip through storage',()=>{
- const s=memory(),v={target:16,lanes:false,sound:true,scanlines:0.2};
+ const s=memory(),v={lanes:false,sound:true,scanlines:0.2};
  assert.equal(saveSettings(s,v),true);
  assert.deepEqual(loadSettings(s),v);
 });
