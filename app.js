@@ -1,46 +1,85 @@
-import {Game,SHAPES,WIDTH,HEIGHT,onBoard} from './engine.js';
-const $=id=>document.getElementById(id),ctx=$('game').getContext('2d');
-const R=17,DX=Math.sqrt(3)*R,TOP=66,LEFT=364;
-const colors=['#79ddbf','#f4a264','#a99aef','#66b9e4','#df94b6','#d9cf7f','#a0d0db','#b4df92','#f0c693','#b0bee9'];
-let game=new Game(),started=false,last=0,soft=false,flash=null,offcut=null,sound=false,audio,messageUntil=0;
-const center=(c,r)=>({x:LEFT+DX*(c+.5*(r%2)),y:TOP+1.5*R*r});
-function path(x,y,r=R-1){ctx.beginPath();for(let i=0;i<6;i++){const a=-Math.PI/2+i*Math.PI/3;const px=x+r*Math.cos(a),py=y+r*Math.sin(a);i?ctx.lineTo(px,py):ctx.moveTo(px,py);}ctx.closePath();}
-function hex(x,y,color,ghost=false,r=R-1){path(x,y,r);ctx.fillStyle=ghost?'#14242d':color+'30';ctx.fill();ctx.strokeStyle=color;ctx.lineWidth=ghost?1:1.5;ctx.stroke();}
-// Lane cells are drawn faint and dashed: they steer and support like any cell but are cut off on lock.
-function dashed(x,y,color,alpha,dash=[3,3]){ctx.globalAlpha=alpha;ctx.setLineDash(dash);path(x,y);ctx.strokeStyle=color;ctx.lineWidth=1.2;ctx.stroke();ctx.setLineDash([]);ctx.globalAlpha=1;}
-function cross(x,y,color,s=5){line(x-s,y-s,x+s,y+s,color);line(x+s,y-s,x-s,y+s,color);}
-function text(t,x,y,color='#98aab4',size=12,align='left'){ctx.textAlign=align;ctx.fillStyle=color;ctx.font=`${size}px "Courier New",monospace`;ctx.fillText(t,x,y);}
-function line(x,y,x2,y2,color='#3b4c56'){ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x2,y2);ctx.strokeStyle=color;ctx.lineWidth=1;ctx.stroke();}
-function mini(id,x,y){const cells=SHAPES[id].cells;const coords=cells.map(([q,r])=>({x:Math.sqrt(3)*16*(q+r/2),y:24*r}));const min=Math.min(...coords.map(p=>p.x)),max=Math.max(...coords.map(p=>p.x)),mid=(min+max)/2;for(const p of coords)hex(x+p.x-mid,y+p.y,colors[id],false,15);}
-function draw(now){ctx.fillStyle='#0b1319';ctx.fillRect(0,0,1080,690);
- text('FOUNDATION REPORT',58,60,'#f5bb68',11);text(String(game.height).padStart(2,'0'),58,124,'#e1e8e6',56);text(`/ ${game.target} solid floors`,140,123,'#98aab4',12);line(58,148,263,148);text('Finish lower floors',58,181);text('before sealing upper ones.',58,201);text('INCOMPLETE FLOOR',58,255,'#f5bb68',10);text(game.height<HEIGHT?String(game.height+1).padStart(2,'0'):'—',58,293,'#e1e8e6',25);text(game.gaps?`Up to ${game.gaps} open ${game.gaps===1?'hex':'hexes'} allowed.`:'Fill every open hex.',58,321,'#8299a6',11);text('Cuts remove height.',58,375,'#e5978e',11);text('The clock keeps running.',58,395,'#8299a6',11);text('Nothing falls afterward.',58,415,'#8299a6',11);if(game.reach<HEIGHT){text('REACH LIMIT',58,455,'#ff7f77',10);text(`Build at most ${game.reach} rows`,58,478,'#8299a6',11);text('above the solid floors.',58,498,'#8299a6',11);}
- const targetR=HEIGHT-game.target;const ty=center(0,targetR).y-R;ctx.setLineDash([4,5]);line(LEFT-1.5*DX-4,ty,LEFT+(WIDTH+1)*DX+4,ty,'#f5bb6899');ctx.setLineDash([]);text('TOP OUT',LEFT+(WIDTH+1.5)*DX+10,ty+4,'#f5bb68',10);const limitR=game.limitRow();if(started&&limitR>0){const ly=center(0,limitR).y-R;ctx.setLineDash([2,4]);line(LEFT-1.5*DX-4,ly,LEFT+(WIDTH+1)*DX+4,ly,'#ff7f77aa');ctx.setLineDash([]);text('REACH LIMIT',LEFT+(WIDTH+1.5)*DX+10,ly+(limitR===targetR?16:4),'#ff7f77',10);}
- for(let r=0;r<HEIGHT;r++){const solid=r>=HEIGHT-game.height;for(let c=0;c<WIDTH;c++){const p=center(c,r);path(p.x,p.y);ctx.fillStyle=solid?'#17372d':'#101e27';ctx.fill();ctx.strokeStyle=solid?'#306456':'#243743';ctx.lineWidth=.7;ctx.stroke();if(game.board[r][c])hex(p.x,p.y,colors[game.board[r][c]-1]);}
- if(game.lanes)for(const c of [-1,WIDTH]){const p=center(c,r);dashed(p.x,p.y,'#2c4350',1,[2,4]);}
- text(String(HEIGHT-r).padStart(2,'0'),LEFT-52,center(0,r).y+4,solid?'#79ddbf':'#526c7a',10,'right');}
- // The floor follows the actual lower hex edges, forming fitting notches.
- const bottom=HEIGHT-1;ctx.beginPath();for(let c=0;c<WIDTH;c++){const p=center(c,bottom),x=p.x-DX/2,y=p.y+R/2;c?ctx.lineTo(x,y):ctx.moveTo(x,y);ctx.lineTo(p.x,p.y+R);ctx.lineTo(p.x+DX/2,y);}ctx.strokeStyle='#f5bb68';ctx.lineWidth=3;ctx.stroke();if(game.lanes){ctx.setLineDash([3,4]);for(const c of [-1,WIDTH]){const p=center(c,bottom);ctx.beginPath();ctx.moveTo(p.x-DX/2,p.y+R/2);ctx.lineTo(p.x,p.y+R);ctx.lineTo(p.x+DX/2,p.y+R/2);ctx.strokeStyle='#f5bb6866';ctx.lineWidth=2;ctx.stroke();}ctx.setLineDash([]);}text('SAWTOOTH FOUNDATION',LEFT+WIDTH*DX/2,TOP+HEIGHT*1.5*R+33,'#a8b7be',10,'center');
- if(started&&game.status==='playing'&&!game.pending&&!game.jammed){const p=game.landing(),over=game.overReach(p);for(const {c,r} of game.cells(p)){const v=center(c,r);if(onBoard(c))hex(v.x,v.y,over?'#ff7f77':colors[p.id]+'88',true);else{dashed(v.x,v.y,'#ff7f77',.8);cross(v.x,v.y,'#ff7f77cc',4);}}for(const {c,r}of game.cells()){const v=center(c,r);if(onBoard(c))hex(v.x,v.y,colors[game.piece.id]);else dashed(v.x,v.y,colors[game.piece.id],.55,[4,3]);}const pivot=center(game.piece.q+Math.floor(game.piece.r/2),game.piece.r);const nextP=game.lower();if(game.fits(nextP)){const n=center(nextP.q+Math.floor(nextP.r/2),nextP.r),dx=n.x-pivot.x,dy=n.y-pivot.y,len=Math.hypot(dx,dy),ux=dx/len,uy=dy/len,tx=pivot.x+ux*R*.9,ty=pivot.y+uy*R*.9;ctx.beginPath();ctx.moveTo(pivot.x+ux*5,pivot.y+uy*5);ctx.lineTo(tx,ty);ctx.moveTo(tx-ux*7-uy*5,ty-uy*7+ux*5);ctx.lineTo(tx,ty);ctx.lineTo(tx-ux*7+uy*5,ty-uy*7-ux*5);ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.stroke();}ctx.beginPath();ctx.arc(pivot.x,pivot.y,3,0,Math.PI*2);ctx.fillStyle='#fff';ctx.fill();}
- if(flash&&now-flash.time<850){ctx.globalAlpha=1-(now-flash.time)/850;for(const p of flash.removed){const v=center(p.c,p.r);hex(v.x,v.y,'#ff7f77');line(v.x-5,v.y-5,v.x+5,v.y+5,'#ffaaa0');}ctx.globalAlpha=1;const y=center(0,flash.gap).y-R;ctx.setLineDash([5,4]);line(LEFT-1.5*DX,y,LEFT+(WIDTH+1)*DX,y,'#ff7f77');ctx.setLineDash([]);}
- if(offcut&&now-offcut.time<400){const a=1-(now-offcut.time)/400;for(const p of offcut.cells){const v=center(p.c,p.r);dashed(v.x,v.y,'#f5bb68',a);ctx.globalAlpha=a;cross(v.x,v.y,'#f5bb68',4);ctx.globalAlpha=1;}}
- text('NEXT DELIVERY',804,60,'#f5bb68',11);mini(game.next,856,116);text(SHAPES[game.next].name,856,177,'#a8bac4',11,'center');text(`${SHAPES[game.next].cells.length} hexes`,856,196,'#667f8d',10,'center');line(770,225,994,225);text('ROTATION / 60°',783,260,'#f5bb68',11);text('↑ or X    clockwise',783,292,'#a8bac4',11);text('Z         counterclockwise',783,314,'#a8bac4',11);text('← →       steer',783,348,'#a8bac4',11);text('↓         descend',783,370,'#a8bac4',11);text('Space     drop',783,392,'#a8bac4',11);text('Shift     change beat',783,414,'#a8bac4',11);text('7 tetrahexes',783,464,'#d0dbdf',13);text('3 trihex patch pieces',783,486,'#a8bac4',11);text('No flat floor.',783,543,'#667f8d',11);text('No falling rubble.',783,564,'#667f8d',11);if(game.lanes){text('EDGE LANES',783,606,'#f5bb68',11);text('Steer partly past a wall.',783,628,'#a8bac4',11);text('Hexes left there are cut.',783,648,'#a8bac4',11);}
+import {Game,HEIGHT} from './engine.js';
+import {C} from './palette.js';
+import {loadAssets} from './assets.js';
+import {loadSettings,saveSettings} from './settings.js';
+import {DIFFICULTIES,difficulty,fitScale,layoutBox,hit,menuKey,SETTING_ROWS,settingLabel,changeSetting} from './ui.js';
+import {LAYOUT,drawSky,drawBackdrop,drawSprites,drawDim,drawBox,drawItems,drawLogo,drawControls,MENU_SCENERY,PLAY_SCENERY} from './render.js';
+
+const canvas=document.getElementById('game'),ctx=canvas.getContext('2d'),screenEl=document.getElementById('screen'),scanEl=document.getElementById('scan');
+ctx.imageSmoothingEnabled=false;
+const store=(()=>{try{return window.localStorage;}catch{return null;}})();
+let settings=loadSettings(store),assets={manifest:null,images:{}};
+let screen='menu',cursor=1,settingsCursor=0,boxCursor=0,game=null,diff=DIFFICULTIES[1],soft=false,last=0;
+let flash=null,offcut=null,message='',messageUntil=0,overSince=0,audio;
+loadAssets().then(a=>{assets=a;});
+
+function resize(){const s=fitScale(innerWidth,innerHeight);screenEl.style.width=`${480*s}px`;screenEl.style.height=`${270*s}px`;}
+addEventListener('resize',resize);resize();
+const applyScan=()=>{scanEl.style.opacity=String(settings.scanlines);};
+applyScan();
+
+function tone(freq=260,dur=.08){if(!settings.sound)return;try{audio??=new(window.AudioContext||window.webkitAudioContext)();audio.resume();const osc=audio.createOscillator(),gain=audio.createGain();osc.type='triangle';osc.frequency.value=freq;gain.gain.setValueAtTime(.05,audio.currentTime);gain.gain.exponentialRampToValueAtTime(.001,audio.currentTime+dur);osc.connect(gain).connect(audio.destination);osc.start();osc.stop(audio.currentTime+dur);}catch{}}
+function note(s){message=s;messageUntil=performance.now()+5000;}
+
+const menuLayout=()=>layoutBox([...DIFFICULTIES.map(d=>d.label),'SETTINGS'],{y:96,minWidth:120});
+const settingsLayout=()=>layoutBox(SETTING_ROWS.map(r=>settingLabel(r,settings)),{y:80,minWidth:200});
+
+function start(d){
+ diff=d;game=new Game({target:settings.target,lanes:settings.lanes,...difficulty(d.gaps)});
+ screen='play';flash=offcut=null;soft=false;boxCursor=0;last=performance.now();
+ note('BUILD FLOOR 1 FIRST.');tone(440);
 }
-function note(s){$('message').textContent=s;messageUntil=performance.now()+5000;}
-function tone(freq=260,dur=.08){if(!sound)return;try{audio??=new(window.AudioContext||window.webkitAudioContext)();audio.resume();const osc=audio.createOscillator(),gain=audio.createGain();osc.type='triangle';osc.frequency.value=freq;gain.gain.setValueAtTime(.05,audio.currentTime);gain.gain.exponentialRampToValueAtTime(.001,audio.currentTime+dur);osc.connect(gain).connect(audio.destination);osc.start();osc.stop(audio.currentTime+dur);}catch{}}
-function begin(){$('start').blur();if(started&&game.paused&&game.status==='playing'){game.paused=false;}else{game=newGame();flash=offcut=null;started=true;note('Build floor 1 first. White dot = rotation pivot.');}
- soft=false;last=performance.now();$('overlay').classList.add('hidden');$('pause').disabled=false;$('pause').textContent='Pause';tone(440);}
-function show(mode){$('overlay').classList.remove('hidden');$('settings').style.display='none';$('tag').textContent=mode==='paused'?'Work suspended':mode==='won'?'Construction complete':'Deadline reached';$('heading').textContent=mode==='paused'?'Tools down.':mode==='won'?'TOPPED OUT':'Time’s up.';$('description').textContent=mode==='paused'?'Your tower and timer are waiting.':`${game.height} solid floors · ${game.placed} pieces placed · ${game.cuts} cutbacks${game.lanes?` · ${game.offcuts} offcuts`:''}`;$('start').textContent=mode==='paused'?'Resume building':'Build again';}
-function pause(){if(!started||game.status!=='playing')return;game.paused=!game.paused;soft=false;if(game.paused)show('paused');else $('overlay').classList.add('hidden');$('pause').textContent=game.paused?'Resume':'Pause';}
-// A held arrow stops at the visible wall; only a fresh press steers into a lane.
-function act(a,repeat=false){if(!started||!game.active())return;if(a==='left')game.move(-1,!repeat);if(a==='right')game.move(1,!repeat);if(a==='cw')game.rotate(1);if(a==='ccw')game.rotate(-1);if(a==='down')game.down();if(a==='beat')game.flipBeat();if(a==='drop')game.drop();}
-$('start').onclick=()=>begin();$('pause').onclick=()=>{pause();$('pause').blur();};$('restart').onclick=()=>{game.paused=true;soft=false;started=false;game=newGame();flash=offcut=null;$('settings').style.display='flex';$('overlay').classList.remove('hidden');$('tag').textContent='Construction, under pressure';$('heading').textContent='Build it solid.';$('description').textContent='Complete floors from the bottom up. Sealing a row above a gap cuts away everything above the lowest unfinished row.';$('start').textContent='Start building ↵';$('pause').disabled=true;$('pause').textContent='Pause';note('Choose a target, then start building.');$('restart').blur();};
-$('sound').onclick=()=>{sound=!sound;$('sound').textContent=sound?'Sound on':'Sound off';$('sound').setAttribute('aria-pressed',String(sound));$('sound').blur();tone(660);};
-for(const b of document.querySelectorAll('[data-action]'))b.onclick=()=>{act(b.dataset.action);b.blur();};
-// Difficulty sets the gaps a row may keep, how many rows can be built above the top solid floor, and the clock.
-const difficulty=()=>{const gaps=Number($('difficulty').value);return {gaps,reach:[4,5,6][gaps],duration:[8,9,10][gaps]*60000};};
-const newGame=()=>new Game({target:Number($('target').value),lanes:$('lanes').value==='on',...difficulty()});
-const keymap={ArrowLeft:'left',ArrowRight:'right',ArrowUp:'cw',x:'cw',z:'ccw',' ':'drop',Shift:'beat'};
-window.addEventListener('keydown',e=>{if(e.ctrlKey||e.metaKey||e.altKey||e.target instanceof HTMLSelectElement)return;const k=e.key.length===1?e.key.toLowerCase():e.key;if(![...Object.keys(keymap),'ArrowDown','p','Escape','Enter'].includes(k))return;if(e.target instanceof HTMLButtonElement&&(k===' '||k==='Enter'))return;e.preventDefault();if(k==='p'||k==='Escape'){if(!e.repeat)pause();return;}if(k==='Enter'){if(!e.repeat&&(!started||game.paused||game.status!=='playing'))begin();return;}if(k==='ArrowDown'){soft=true;return;}if(e.repeat&&['cw','ccw','drop','beat'].includes(keymap[k]))return;act(keymap[k],e.repeat);});window.addEventListener('keyup',e=>{if(e.key==='ArrowDown')soft=false;});function blur(){soft=false;if(started&&game.status==='playing'&&!game.paused)pause();}window.addEventListener('blur',blur);document.addEventListener('visibilitychange',()=>{if(document.hidden)blur();});
-function frame(now){const dt=Math.min(100,Math.max(0,now-last));last=now;if(started){game.update(dt,soft);for(const e of game.events){if(e.type==='cut'){flash={...e,time:now};note(`${e.reason==='blocked'?'ENTRY BLOCKED — CUTBACK':e.reason==='reach'?'TOO HIGH — CUTBACK':'CUTBACK'}: ${e.removed.length} hexes removed. Floor ${HEIGHT-e.gap} stays unfinished.`);tone(80,.3);}if(e.type==='step')tone(e.dir==='se'?1250:830,.035);if(e.type==='lock'){tone(170);if(e.offcuts.length){offcut={cells:e.offcuts,time:now};if(!game.events.some(x=>x.type==='cut'))note(`OFFCUT: ${e.offcuts.length} ${e.offcuts.length===1?'hex':'hexes'} past the wall cut off.`);tone(120,.06);}}if(e.type==='jam')note('Entry blocked at the unfinished row; nothing above it remains to cut. Restart to try again.');}game.events=[];if(game.status!=='playing'&&$('overlay').classList.contains('hidden')){show(game.status);$('pause').disabled=true;tone(game.status==='won'?780:90,.3);}if(now>messageUntil&&game.active())$('message').textContent=`Finish floor ${game.height+1}. A completed row above a gap triggers a cutback.`;}
- const seconds=Math.ceil(((started?game.duration:difficulty().duration)-game.elapsed)/1000);$('clock').textContent=`${String(Math.floor(seconds/60)).padStart(2,'0')}:${String(seconds%60).padStart(2,'0')}`;$('height').textContent=`${game.height} / ${game.target}`;$('cuts').textContent=game.cuts;$('placed').textContent=`${game.placed} pieces placed`;$('progress').style.width=`${100*game.height/game.target}%`;$('state').textContent=!started?'Site ready':game.paused?'Work paused':game.pending?'Cutting back':game.jammed?'Entry blocked':game.status==='playing'?'Building':game.status==='won'?'Topped out':'Deadline reached';draw(now);requestAnimationFrame(frame);}
+function toMenu(){screen='menu';game=null;soft=false;}
+function updateSettings(next){const soundOn=!settings.sound&&next.sound;settings=next;saveSettings(store,settings);applyScan();if(soundOn)tone(660);}
+
+function menuInput(k,repeat){
+ const r=menuKey(DIFFICULTIES.length+1,cursor,k,repeat);cursor=r.cursor;
+ if(r.select===undefined)return;
+ if(r.select<DIFFICULTIES.length)start(DIFFICULTIES[r.select]);else{screen='settings';settingsCursor=0;}
+}
+function settingsInput(k,repeat){
+ const row=SETTING_ROWS[settingsCursor];
+ if(k==='Escape'){screen='menu';return;}
+ if(k==='ArrowLeft'||k==='ArrowRight'){updateSettings(changeSetting(settings,row,k==='ArrowLeft'?-1:1));return;}
+ const r=menuKey(SETTING_ROWS.length,settingsCursor,k,repeat);settingsCursor=r.cursor;
+ if(r.select===undefined)return;
+ if(row==='back')screen='menu';else updateSettings(changeSetting(settings,row,1));
+}
+function playInput(k,repeat){}
+
+addEventListener('keydown',e=>{
+ if(e.ctrlKey||e.metaKey||e.altKey)return;
+ const k=e.key.length===1?e.key.toLowerCase():e.key;
+ if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' ','Enter','Escape','Shift','p','x','z'].includes(k))e.preventDefault();
+ if(screen==='menu')menuInput(k,e.repeat);
+ else if(screen==='settings')settingsInput(k,e.repeat);
+ else playInput(k,e.repeat);
+});
+addEventListener('keyup',e=>{if(e.key==='ArrowDown')soft=false;});
+
+const toCanvas=e=>{const r=canvas.getBoundingClientRect();return [(e.clientX-r.left)*480/r.width,(e.clientY-r.top)*270/r.height];};
+function activeRows(){
+ if(screen==='menu')return menuLayout().rows;
+ if(screen==='settings')return settingsLayout().rows;
+ return null;
+}
+function setCursor(i){if(screen==='menu')cursor=i;else if(screen==='settings')settingsCursor=i;else boxCursor=i;}
+canvas.addEventListener('mousemove',e=>{const rows=activeRows();if(!rows)return;const i=hit(rows,...toCanvas(e));if(i>=0)setCursor(i);});
+canvas.addEventListener('click',e=>{
+ const rows=activeRows();if(!rows)return;const i=hit(rows,...toCanvas(e));if(i<0)return;setCursor(i);
+ if(screen==='menu')menuInput('Enter',false);else if(screen==='settings')settingsInput('Enter',false);else playInput('Enter',false);
+});
+
+function draw(now){
+ drawSky(ctx,assets.manifest,now);drawBackdrop(ctx,assets);
+ if(screen==='play'){
+  drawSprites(ctx,assets,PLAY_SCENERY,now);drawDim(ctx);
+  const k=LAYOUT.cabinet;drawBox(ctx,k.x,k.y,k.w,k.h,C.royal);
+  return;
+ }
+ drawSprites(ctx,assets,MENU_SCENERY,now);drawLogo(ctx,assets);
+ if(screen==='menu'){drawItems(ctx,menuLayout(),cursor,now);drawControls(ctx);}
+ else drawItems(ctx,settingsLayout(),settingsCursor,now);
+}
+function frame(now){last=now;draw(now);requestAnimationFrame(frame);}
 requestAnimationFrame(frame);

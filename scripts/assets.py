@@ -265,6 +265,11 @@ def backdrop():
             if len(comp) <= 60 and any(ipx[p][:3] in light for p in comp):
                 for p in comp:
                     ipx[p] = (0, 0, 0, 0)
+    # The game draws the sun; clear the art's sun disc above the horizon so it cannot cover it.
+    for y in range(horizon):
+        for x in range(W):
+            if (x - SUN['x']) ** 2 + (y - SUN['y']) ** 2 <= (SUN['r'] + 2) ** 2:
+                ipx[x, y] = (0, 0, 0, 0)
     return despeckle(img), horizon, merged
 
 

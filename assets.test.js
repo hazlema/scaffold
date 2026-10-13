@@ -26,3 +26,15 @@ test('sky bands are palette colors that tile the sky down to the horizon',()=>{
  assert.equal(y,m.horizon);
  assert.ok(m.sun&&m.sun.r>0&&m.sun.y-m.sun.r<m.horizon,'sun must rise above the horizon');
 });
+
+import {loadAssets} from './assets.js';
+
+test('loadAssets survives a missing manifest and missing images',async()=>{
+ const none=await loadAssets('x/',{fetchJson:()=>Promise.reject(new Error('404')),loadImage:()=>Promise.resolve({})});
+ assert.deepEqual(none,{manifest:null,images:{}});
+ const m={sprites:{gem:[10,10],'cube-blue':[5,5]}};
+ const some=await loadAssets('x/',{fetchJson:async()=>m,loadImage:async src=>{if(src.includes('gem'))throw new Error('404');return {src};}});
+ assert.equal(some.manifest,m);
+ assert.deepEqual(Object.keys(some.images).sort(),['backdrop','cube-blue','logo']);
+ assert.equal(some.images['cube-blue'].src,'x/cube-blue.png');
+});
