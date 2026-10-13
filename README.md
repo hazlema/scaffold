@@ -26,11 +26,21 @@ Arrow left/right: steer. Up or X: rotate clockwise 60°. Z: rotate counterclockw
 
 **Look:** everything is drawn at 480×270 in a fixed 16-colour palette, scaled up with square pixels, under drifting CRT scanlines (strength in Settings). Source art lives in `art/`; `python3 scripts/assets.py` (needs Pillow) converts it into `assets/`. Run it again only when the art changes.
 
-**Difficulty** is chosen on the title menu (EASY, MEDIUM or HARD; the cursor starts on MEDIUM). It sets how many open hexes a row may have and still count as solid: Easy 2, Medium 1, Hard 0. A solid row counts as a floor, sets off the cutback check when it is sealed, and is never treated as a gap below a sealed row. Its open hexes stay open and can still be filled later. Difficulty also sets the **reach limit**: hexes may sit at most Easy 6, Medium 5, Hard 4 rows above the top solid floor, counting the unfinished floor as row 1. A red dashed line marks the limit and climbs as floors are finished; the landing outline turns red when a drop would cross it, counting any floors that drop would itself finish. Locking a piece above the line sets off a cutback ("TOO HIGH") that removes everything above the lowest unfinished floor.
+**Difficulty** is chosen on the title menu and sets every rule of a run:
+
+| | Open hexes a solid row may keep | Reach above the top solid floor | Target floors | Clock per level | Score weight |
+|---|---|---|---|---|---|
+| EASY | 2 | 6 rows | 8 | 3:00 | ×1 |
+| MEDIUM | 1 | 5 rows | 12 | 5:00 | ×2 |
+| HARD | 0 | 4 rows | 12 | 6:00 | ×3 |
+
+A solid row counts as a floor, sets off the cutback check when it is sealed, and is never treated as a gap below a sealed row; its open hexes stay open and can still be filled later. A red dashed line marks the reach limit and climbs as floors are finished; the landing outline turns red when a drop would cross it. Locking a piece above the line sets off a "TOO HIGH" cutback.
+
+**Runs and levels:** reach the target (the solid yellow GOAL line) before the clock runs out to clear the level. The next level starts on an empty board with a full clock, and pieces drop 10% faster for every level cleared. The run ends when a level's clock runs out, or when a piece cannot enter and nothing is left to cut. Your score is every solid floor you built in the run times the difficulty weight. A top-10 score asks for three initials (↑/↓ change a letter, ←/→ or Enter move, Enter on the last saves); the table is kept in your browser and is also under HIGH SCORES on the title menu.
 
 **Edge lanes** (on by default, toggle in Settings): a dashed lane runs beside each wall. A piece may steer partly into a lane to reach awkward wall pockets, but it must keep at least one hex on the board. Lane hexes are drawn faint, never collide, and are cut off when the piece locks; the landing outline marks them with a red ×. Holding an arrow stops at the visible wall; press again to enter a lane. New deliveries always appear fully on the board, and rotation prefers on-board positions before using a lane.
 
-Build eight consecutive solid floors from the sawtooth foundation before the clock runs out: 10 minutes on Easy, 9 on Medium, 8 on Hard. Settings offers 12- and 16-floor targets too, along with sound and scanline strength; settings are remembered in the browser. The clock is a deadline: reaching the target wins; running out of time loses. Complete floors stay in place.
+Build from the sawtooth foundation up to the GOAL line. Settings holds edge lanes, sound and scanline strength; settings and high scores are remembered in the browser. Complete floors stay in place.
 
 A newly completed row triggers inspection of every row below it. If there is a gap, retain the lowest incomplete row and everything below it; remove all placed cells above it. No collapse, shifting, or grinding. Simply placing above a gap never triggers deletion. The brief cutback animation locks input while the clock continues.
 
@@ -46,7 +56,7 @@ A blocked entry checks the built tower for gaps, excluding empty headroom. If th
 
 - `engine.js` — hex geometry, piece generation, construction rules, timer, and cutbacks.
 - `app.js` — screens (menu, settings, play), keyboard and mouse input, frame loop, and optional synthesized audio.
-- `render.js` — board geometry and all drawing on the 480×270 canvas; `ui.js` — menu layout and keys; `font.js` — 5×7 bitmap font; `palette.js` — the 16 colours; `settings.js` — saved settings; `assets.js` — art loader.
+- `render.js` — board geometry and all drawing on the 480×270 canvas; `ui.js` — menu layout and keys; `font.js` — 5×7 bitmap font; `palette.js` — the 16 colours; `run.js` — levels, speed and score; `scores.js` — the local top-10 table; `settings.js` — saved settings; `assets.js` — art loader.
 - `art/` — source art; `scripts/assets.py` converts it into `assets/`.
 - `*.test.js` — rule and regression tests (`engine.test.js`, including side-wall descent and blocked-entry recovery) plus tests for the font, settings, UI logic, board geometry and assets.
 - `index.html` and `style.css` — the canvas, integer scaling, and the scanline layer.
