@@ -3,6 +3,6 @@ body{display:grid;place-items:center}
 #screen{position:relative;width:480px;height:270px}
 #game{display:block;width:100%;height:100%;image-rendering:crisp-edges;image-rendering:pixelated;cursor:default}
 /* Thin CRT scanlines at display resolution, drifting slowly downward. Opacity comes from Settings. */
-#scan{position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(to bottom,#000 0 1px,transparent 1px 3px);opacity:.6;animation:scan 1.5s linear infinite}
-@keyframes scan{to{background-position:0 3px}}
+#scan{position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(to bottom,#000 0 var(--px,1px),transparent var(--px,1px) calc(var(--px,1px)*3));opacity:.6;animation:scan 1.5s linear infinite}
+@keyframes scan{to{background-position:0 calc(var(--px,1px)*3)}}
 @media (prefers-reduced-motion:reduce){#scan{animation:none}}

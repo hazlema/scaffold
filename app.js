@@ -2,7 +2,7 @@ import {Game,HEIGHT} from './engine.js';
 import {C} from './palette.js';
 import {loadAssets} from './assets.js';
 import {loadSettings,saveSettings} from './settings.js';
-import {DIFFICULTIES,difficulty,fitScale,layoutBox,hit,menuKey,SETTING_ROWS,settingLabel,changeSetting} from './ui.js';
+import {DIFFICULTIES,difficulty,fitScale,layoutBox,hit,menuKey,SETTING_ROWS,settingLabel,changeSetting,endWatcher,canSelect} from './ui.js';
 import {LAYOUT,drawSky,drawBackdrop,drawSprites,drawDim,drawBox,drawItems,drawLogo,drawControls,MENU_SCENERY,PLAY_SCENERY,drawBoard,drawPanel} from './render.js';
 
 const canvas=document.getElementById('game'),ctx=canvas.getContext('2d'),screenEl=document.getElementById('screen'),scanEl=document.getElementById('scan');
@@ -13,7 +13,11 @@ let screen='menu',cursor=1,settingsCursor=0,boxCursor=0,game=null,diff=DIFFICULT
 let flash=null,offcut=null,message='',messageUntil=0,overSince=0,audio;
 loadAssets().then(a=>{assets=a;});
 
-function resize(){const s=fitScale(innerWidth,innerHeight);screenEl.style.width=`${480*s}px`;screenEl.style.height=`${270*s}px`;}
+function resize(){
+ const dpr=window.devicePixelRatio||1,s=fitScale(innerWidth,innerHeight,dpr);
+ screenEl.style.width=`${480*s/dpr}px`;screenEl.style.height=`${270*s/dpr}px`;
+ screenEl.style.setProperty('--px',`${1/dpr}px`);// scanlines stay one device pixel thin
+}
 addEventListener('resize',resize);resize();
 const applyScan=()=>{scanEl.style.opacity=String(settings.scanlines);};
 applyScan();
@@ -55,7 +59,7 @@ function playInput(k,repeat){
   if((k==='p'||k==='Escape')&&game.paused){if(!repeat)pauseToggle();return;}
   const r=menuKey(2,boxCursor,k,repeat);boxCursor=r.cursor;
   // A drop or a mashed key at the final second must not instantly restart: ignore selects briefly.
-  if(r.select!==undefined&&(game.paused||performance.now()-overSince>600))boxSelect(r.select);
+  if(r.select!==undefined&&canSelect(game.paused,overSince,performance.now()))boxSelect(r.select);
   return;
  }
  if(k==='p'||k==='Escape'){if(!repeat)pauseToggle();return;}
@@ -85,7 +89,7 @@ addEventListener('keydown',e=>{
  if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' ','Enter','Escape','Shift','p','x','z'].includes(k))e.preventDefault();
  if(screen==='menu')menuInput(k,e.repeat);
  else if(screen==='settings')settingsInput(k,e.repeat);
- else playInput(k,e.repeat);
+ else{playInput(k,e.repeat);checkEnd(performance.now());}
 });
 addEventListener('keyup',e=>{if(e.key==='ArrowDown')soft=false;});
 
@@ -121,12 +125,12 @@ function draw(now){
  if(screen==='menu'){drawItems(ctx,menuLayout(),cursor,now);drawControls(ctx);}
  else drawItems(ctx,settingsLayout(),settingsCursor,now);
 }
+const watchEnd=endWatcher();
+function checkEnd(now){if(!watchEnd(game))return;overSince=now;boxCursor=0;soft=false;tone(game.status==='won'?780:90,.3);}
 function frame(now){
  const dt=Math.min(100,Math.max(0,now-last));last=now;
  if(screen==='play'){
-  const wasPlaying=game.status==='playing';
-  game.update(dt,soft);handleEvents(now);
-  if(wasPlaying&&game.status!=='playing'){overSince=now;boxCursor=0;soft=false;tone(game.status==='won'?780:90,.3);}
+  game.update(dt,soft);handleEvents(now);checkEnd(now);
  }
  draw(now);requestAnimationFrame(frame);
 }

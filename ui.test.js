@@ -61,3 +61,22 @@ test('clock formats remaining time and never goes negative',()=>{
  assert.equal(clock(0),'00:00');
  assert.equal(clock(-5000),'00:00');
 });
+test('a game end is noticed exactly once, wherever it happened, and results stay locked briefly',async()=>{
+ const {endWatcher,canSelect}=await import('./ui.js');
+ const watch=endWatcher(),a={status:'playing'},b={status:'playing'};
+ assert.equal(watch(null),false);
+ assert.equal(watch(a),false);
+ a.status='won';// e.g. a winning hard drop inside a key handler
+ assert.equal(watch(a),true);
+ assert.equal(watch(a),false);
+ b.status='lost';assert.equal(watch(b),true);
+ assert.equal(canSelect(false,1000,1500),false);
+ assert.equal(canSelect(false,1000,1601),true);
+ assert.equal(canSelect(true,1000,1001),true);// the pause box is never locked
+});
+test('the scale is whole device pixels at fractional display scaling',async()=>{
+ const {fitScale}=await import('./ui.js');
+ assert.equal(fitScale(1536,864,1.25),4);// 125% laptop: 4 device px per game pixel
+ assert.equal(fitScale(1280,720,1.25),3);
+ assert.equal(fitScale(300,200,0.5),1);
+});
