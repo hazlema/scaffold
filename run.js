@@ -9,7 +9,10 @@ export const BASE_DROP_MS=950;
 // base + base*0.1*level as a speed, so each cleared level shortens the step interval.
 export const dropMsFor=cleared=>BASE_DROP_MS/(1+0.1*cleared);
 export const createRun=key=>({diff:DIFFICULTY[key],level:1,cleared:0,banked:0});
-export const levelOptions=(run,lanes)=>{const d=run.diff;return {target:d.target,gaps:d.gaps,reach:d.reach,duration:d.duration,dropMs:dropMsFor(run.cleared),lanes};};
+// Each level cleared also takes a minute off the clock, down to a floor of 1:00.
+export const MIN_CLOCK_MS=60000;
+export const clockFor=run=>Math.max(MIN_CLOCK_MS,run.diff.duration-60000*run.cleared);
+export const levelOptions=(run,lanes)=>{const d=run.diff;return {target:d.target,gaps:d.gaps,reach:d.reach,duration:clockFor(run),dropMs:dropMsFor(run.cleared),lanes};};
 export const onLevelWon=run=>({...run,level:run.level+1,cleared:run.cleared+1,banked:run.banked+run.diff.target});
 // Floors on the current level count up to the target, so the score never jumps at the handover.
 export const runFloors=(run,game)=>run.banked+(game?Math.min(game.height,run.diff.target):0);

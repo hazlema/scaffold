@@ -103,3 +103,17 @@ test('keys still held from play cannot touch the initials until one fresh press'
  r=initialsKey(r.state,'ArrowUp',true);// now a held arrow spins as usual
  assert.deepEqual(r.state.chars,['O','B','H']);
 });
+
+test('initials can be typed: a letter or digit fills the slot and moves on, Backspace goes back',()=>{
+ let r=initialsKey(startInitials(''),'m',false);// the first fresh key both arms entry and types
+ assert.deepEqual(r.state.chars,['M','A','A']);assert.equal(r.state.slot,1);
+ r=initialsKey(r.state,'7',false);r=initialsKey(r.state,'h',false);
+ assert.deepEqual(r.state.chars,['M','7','H']);assert.equal(r.state.slot,2);assert.equal(r.done,false);
+ r=initialsKey(r.state,'q',false);// the last slot is replaced, not passed
+ assert.deepEqual(r.state.chars,['M','7','Q']);assert.equal(r.state.slot,2);
+ assert.deepEqual(initialsKey(r.state,'z',true).state.chars,['M','7','Q']);// a held letter key does not keep typing
+ r=initialsKey(r.state,'Backspace',false);assert.equal(r.state.slot,1);
+ assert.deepEqual(initialsKey(r.state,' ',false).state.chars,['M','7','Q']);// Space is the drop key: never types
+ assert.deepEqual(initialsKey(r.state,'-',false).state.chars,['M','7','Q']);
+ assert.deepEqual(initialsKey(startInitials(''),'m',true).state.chars,['A','A','A']);// held from play: ignored
+});

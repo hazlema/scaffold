@@ -24,6 +24,8 @@ Turn a single timed build into a **run**: clear a level by reaching its target i
 
 - **Target is set by difficulty.** The TARGET row leaves Settings, and a saved `target` value is ignored on load. Settings keeps lanes, sound and scanlines.
 - **Drop speed per level:** `dropMs = 950 / (1 + 0.1 × levelsCleared)`, which is Matthew's `base + base·0.1·level` expressed as the interval between steps. Level 1 (0 cleared) is 950 ms, level 2 is 864 ms, level 3 is 792 ms, and so on. Soft drop stays at 55 ms.
+- **Clock per level** (added after playtest, 2026-10-13): the difficulty's clock minus 1:00 per level cleared, never below 1:00.
+- **Initials can be typed** (added after playtest): a letter or digit fills the slot and moves on, Backspace goes back, arrows still work; the RUN OVER box says `TYPE INITIALS, ENTER`.
 - **Score:** `(levelsCleared × target + floorsOnFinalLevel) × weight`. Worked example: MEDIUM, 4 levels cleared, 3 floors on level 5 gives `(48 + 3) × 2 = 102`.
 - **High scores:** one combined top 10 for all difficulties. Entries show rank, initials, score, difficulty letter (E/M/H) and level reached.
 

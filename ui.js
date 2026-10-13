@@ -37,7 +37,8 @@ export function changeSetting(s,row,dir){
 }
 export function clock(ms){const s=Math.max(0,Math.ceil(ms/1000));return `${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;}
 
-// Arcade initials: three slots; up/down spin the character, left/right or Enter move, Enter on the last saves.
+// Arcade initials: three slots. Type a letter or digit, or spin with up/down; left/right, Enter or Backspace move;
+// Enter on the last slot saves.
 export const INITIAL_CHARS='ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 ';
 export const startInitials=last=>({chars:[...(typeof last==='string'&&/^[A-Z0-9 ]{3}$/.test(last)?last:'AAA')],slot:0,armed:false});
 export function initialsKey(state,key,repeat){
@@ -50,7 +51,10 @@ export function initialsKey(state,key,repeat){
   return at(next,slot);
  }
  if(key==='ArrowLeft')return at(chars,Math.max(0,slot-1));
- if(repeat)return {state,done:false};// a held Enter or right arrow never moves on or saves
+ if(repeat)return {state,done:false};// a held Enter, letter or right arrow never moves on, types or saves
+ const typed=key.length===1?key.toUpperCase():'';
+ if(typed!==' '&&typed&&INITIAL_CHARS.includes(typed)){const next=[...chars];next[slot]=typed;return at(next,Math.min(2,slot+1));}
+ if(key==='Backspace')return at(chars,Math.max(0,slot-1));
  if(key==='ArrowRight')return at(chars,Math.min(2,slot+1));
  if(key==='Enter')return slot===2?{state,done:true}:at(chars,slot+1);
  return {state,done:false};

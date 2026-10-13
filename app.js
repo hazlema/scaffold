@@ -124,7 +124,7 @@ function handleEvents(now){
 addEventListener('keydown',e=>{
  if(e.ctrlKey||e.metaKey||e.altKey)return;
  const k=e.key.length===1?e.key.toLowerCase():e.key;
- if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' ','Enter','Escape','Shift','p','x','z'].includes(k))e.preventDefault();
+ if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' ','Enter','Escape','Shift','Backspace','p','x','z'].includes(k))e.preventDefault();
  if(screen==='menu')menuInput(k,e.repeat);
  else if(screen==='settings')settingsInput(k,e.repeat);
  else if(screen==='scores')scoresInput(k,e.repeat);
@@ -159,7 +159,7 @@ function draw(now){
   drawPanel(ctx,game,{remaining:game.duration-game.elapsed,label:run.diff.label,level:run.level,score:runScore(run,game),
    message:now<messageUntil||!live?message:`FINISH FLOOR ${game.height+1}.`});
   if(phase==='clear')drawBanner(ctx,{title:`LEVEL ${run.level}`,lines:['CLEAR',`${clock(game.duration-game.elapsed)} LEFT`]});
-  else if(phase==='entry')drawBanner(ctx,{title:'RUN OVER',lines:[`${result.label}  LEVEL ${result.level}`,floorsText(result.floors)],big:String(result.score),slots:entry.chars,slot:entry.slot,now});
+  else if(phase==='entry')drawBanner(ctx,{title:'RUN OVER',lines:[`${result.label}  LEVEL ${result.level}`,floorsText(result.floors),'TYPE INITIALS, ENTER'],big:String(result.score),slots:entry.chars,slot:entry.slot,now});
   else if(phase==='table'){
    drawDim(ctx);
    drawScoreTable(ctx,scores.entries,highlight,now,{title:'RUN OVER',line:`${result.label}  LEVEL ${result.level}  ${floorsText(result.floors)}  SCORE ${result.score}`});

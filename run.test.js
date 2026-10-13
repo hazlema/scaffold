@@ -46,3 +46,13 @@ test('a run ends when the clock runs out or the entry is blocked with nothing le
  assert.equal(isRunOver({status:'won',jammed:false,pending:0}),false);
  assert.equal(isRunOver({status:'playing',jammed:false,pending:0}),false);
 });
+
+test('each level cleared takes a minute off the clock, never below 1:00',()=>{
+ let run=createRun('medium');const clocks=[];
+ for(let i=0;i<6;i++){clocks.push(levelOptions(run,true).duration);run=onLevelWon(run);}
+ assert.deepEqual(clocks,[300000,240000,180000,120000,60000,60000]);
+ let easy=createRun('easy');for(let i=0;i<3;i++)easy=onLevelWon(easy);
+ assert.equal(levelOptions(easy,true).duration,60000);
+ let hard=createRun('hard');hard=onLevelWon(hard);
+ assert.equal(levelOptions(hard,true).duration,300000);
+});

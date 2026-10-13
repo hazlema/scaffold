@@ -28,7 +28,7 @@ Arrow left/right: steer. Up or X: rotate clockwise 60°. Z: rotate counterclockw
 
 **Difficulty** is chosen on the title menu and sets every rule of a run:
 
-| | Open hexes a solid row may keep | Reach above the top solid floor | Target floors | Clock per level | Score weight |
+| | Open hexes a solid row may keep | Reach above the top solid floor | Target floors | Starting clock | Score weight |
 |---|---|---|---|---|---|
 | EASY | 2 | 6 rows | 8 | 3:00 | ×1 |
 | MEDIUM | 1 | 5 rows | 12 | 5:00 | ×2 |
@@ -36,7 +36,7 @@ Arrow left/right: steer. Up or X: rotate clockwise 60°. Z: rotate counterclockw
 
 A solid row counts as a floor, sets off the cutback check when it is sealed, and is never treated as a gap below a sealed row; its open hexes stay open and can still be filled later. A red dashed line marks the reach limit and climbs as floors are finished; the landing outline turns red when a drop would cross it. Locking a piece above the line sets off a "TOO HIGH" cutback.
 
-**Runs and levels:** reach the target (the solid yellow GOAL line) before the clock runs out to clear the level. The next level starts on an empty board with a full clock, and pieces drop 10% faster for every level cleared. The run ends when a level's clock runs out, or when a piece cannot enter and nothing is left to cut. Your score is every solid floor you built in the run times the difficulty weight. A top-10 score asks for three initials (↑/↓ change a letter, ←/→ or Enter move, Enter on the last saves); the table is kept in your browser and is also under HIGH SCORES on the title menu.
+**Runs and levels:** reach the target (the solid yellow GOAL line) before the clock runs out to clear the level. The next level starts on an empty board with a clock one minute shorter than the last (never under 1:00), and pieces drop 10% faster for every level cleared. The run ends when a level's clock runs out, or when a piece cannot enter and nothing is left to cut. Your score is every solid floor you built in the run times the difficulty weight. A top-10 score asks for three initials (type them, or spin each with ↑/↓; Enter on the last one saves); the table is kept in your browser and is also under HIGH SCORES on the title menu.
 
 **Edge lanes** (on by default, toggle in Settings): a dashed lane runs beside each wall. A piece may steer partly into a lane to reach awkward wall pockets, but it must keep at least one hex on the board. Lane hexes are drawn faint, never collide, and are cut off when the piece locks; the landing outline marks them with a red ×. Holding an arrow stops at the visible wall; press again to enter a lane. New deliveries always appear fully on the board, and rotation prefers on-board positions before using a lane.
 

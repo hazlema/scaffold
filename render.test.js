@@ -49,12 +49,13 @@ test('readout panel lines stay inside the panel',()=>{
  assert.ok(measure('00:00',3)<=p.w-20&&measure('12/12',2)<=p.w-20&&measure('MEDIUM  CUTS 99',1)<=p.w-20);
 });
 test('banners fit over the board, even with summary, score and initials',()=>{
- const h=bannerHeight({lines:['MEDIUM  LEVEL 12','144 FLOORS'],big:'288',slots:['A','B','C']});
+ const h=bannerHeight({lines:['MEDIUM  LEVEL 12','144 FLOORS','TYPE INITIALS, ENTER'],big:'288',slots:['A','B','C']});
  const k=LAYOUT.cabinet;
  assert.ok(BANNER.y>=k.y&&BANNER.y+h<=k.y+k.h,`banner height ${h}`);
  assert.ok(BANNER.cx-BANNER.w/2>=k.x&&BANNER.cx+BANNER.w/2<=k.x+k.w);
  for(const t of ['RUN OVER','LEVEL 12'])assert.ok(measure(t,2)<=BANNER.w-8,t);
  assert.ok(measure('MEDIUM  LEVEL 12',1)<=BANNER.w-8);
+ assert.ok(measure('TYPE INITIALS, ENTER',1)<=BANNER.w-8);
 });
 test('a full score table, its summary line and its buttons fit the screen',()=>{
  const t=SCORE_TABLE;
