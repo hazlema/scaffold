@@ -22,7 +22,7 @@ Date: 2026-10-13 · Status: awaiting review · Supersedes the tall-screen layout
 
 **Pixel scale:**
 - The canvas fills the width at an integer scale, leaving the deck at least 0.45 × width in height: `fitScale(innerWidth, innerHeight − 0.45·innerWidth, dpr, 216, 302)`.
-- **Rounding fix (all modes):** `fitScale` adds a 0.02 tolerance before flooring, so a screen reporting 1078.9 device px gets 5×, not 4×.
+- **Rounding fix (all modes):** browsers report a whole-number CSS width (411 for 411.43), so `fitScale` allows half a CSS pixel: `floor((w+0.5)·dpr / LW)`. A screen reporting 1078.9 device px then gets 5×, not 4×. A flat ratio tolerance was rejected because it would round a real 1919 px desktop window up to 4× and overflow it.
 
 On the user's phone this gives 5× (411×575 CSS px of game). The deck gets the rest.
 
@@ -71,7 +71,7 @@ The in-canvas side strips, hex buttons, `drawTallSides`, `drawButtons`, `drawMes
 
 ## Testing
 
-- **`ui.test.js`:** `fitScale(411, 915, 2.625, 216, 302)` = 5 (the user's phone); existing expectations unchanged.
+- **`ui.test.js`:** `fitScale(411, 730, 2.625, 216, 302)` = 5 (the user's phone, height minus the deck) and `fitScale(1919, 1080)` stays 3; existing expectations unchanged.
 - **`render.test.js`:** the tall 216×302 layout fits (board in cabinet, strip columns, table and actions, banner with the initials hint, menu and settings boxes, `TAP TO CHOOSE`); the v1 tall-button tests are removed.
 - **`deck.test.js`:** `nextHexes` for every shape stays inside the window and preserves the shape's pointy-top neighbour geometry; `chaseLight` wraps 0→3.
 - **`touch.test.js`:** v1 controller tests kept; the `hitButton` test is removed.
