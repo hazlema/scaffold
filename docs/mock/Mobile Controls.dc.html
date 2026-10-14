@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet><link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet"><style>body{margin:0;background:#111;display:flex;justify-content:center;} a{color:#f6d98a} a:hover{color:#fff}</style></helmet>
+<div style="width:648px;height:1184px;display:flex;flex-direction:column;font-family:'Press Start 2P',monospace;overflow:hidden;background:#6b4fbf;">
+  <div style="height:892px;flex:none;background-image:url(uploads/pad-narrow.png);background-size:648px auto;background-position:top left;image-rendering:pixelated;"></div>
+  <div style="flex:1;position:relative;background-color:#0d0d0f;background-image:{{ texture }};background-size:{{ textureSize }};box-shadow:inset 0 6px 10px rgba(0,0,0,.9), inset 0 2px 0 #2a2a2e;border-top:3px solid #000;padding:18px 14px 22px;display:flex;flex-direction:column;gap:16px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;background:#050506;border-radius:6px;box-shadow:inset 0 2px 4px #000, 0 1px 0 #26262a;padding:10px 14px;">
+      <div style="display:flex;align-items:center;gap:10px;font-size:12px;color:#f6d98a;letter-spacing:1px;"><span style="color:#8a6fe0;">GOAL</span><span>FINISH FLOOR 1</span></div>
+      <div style="display:flex;align-items:center;gap:8px;font-size:10px;color:#8a6fe0;"><span>BEAT</span><div style="width:12px;height:12px;background:#f6d98a;box-shadow:0 0 8px #f6d98a;"></div><div style="width:12px;height:12px;background:#2a2a30;"></div><div style="width:12px;height:12px;background:#2a2a30;"></div><div style="width:12px;height:12px;background:#2a2a30;"></div></div>
+    </div>
+    <div style="flex:1;display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:12px;">
+      <div style="position:relative;width:196px;height:170px;">
+        <sc-for list="{{ dpad }}" as="b" hint-placeholder-count="3">
+          <div style="position:absolute;left:{{ b.x }}px;top:{{ b.y }}px;width:96px;height:96px;display:flex;flex-direction:column;align-items:center;gap:4px;">
+            <div style="width:82px;height:82px;clip-path:polygon(25% 3%,75% 3%,100% 50%,75% 97%,25% 97%,0 50%);background:#000;display:flex;align-items:center;justify-content:center;">
+              <div style="width:74px;height:74px;clip-path:polygon(25% 3%,75% 3%,100% 50%,75% 97%,25% 97%,0 50%);background:linear-gradient(#7f63d6,#5a3fb0);box-shadow:inset 0 -6px 0 #3e2a86;display:flex;align-items:center;justify-content:center;cursor:pointer;" style-active="transform:translateY(3px);filter:brightness(.85);">
+                <div style="width:0;height:0;border-style:solid;border-width:{{ b.bw }};border-color:{{ b.bc }};"></div>
+              </div>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:10px;">
+        <div style="font-size:10px;color:#8a6fe0;letter-spacing:2px;">NEXT</div>
+        <div style="width:150px;height:96px;border-radius:8px;background:#050506;box-shadow:inset 0 2px 5px #000, 0 1px 0 #26262a;display:flex;align-items:center;justify-content:center;">
+          <div style="display:flex;flex-direction:column;align-items:center;">
+            <div style="display:flex;gap:2px;">
+              <div style="width:30px;height:30px;clip-path:polygon(25% 3%,75% 3%,100% 50%,75% 97%,25% 97%,0 50%);background:#f39a3d;"></div>
+              <div style="width:30px;height:30px;clip-path:polygon(25% 3%,75% 3%,100% 50%,75% 97%,25% 97%,0 50%);background:#f39a3d;"></div>
+              <div style="width:30px;height:30px;clip-path:polygon(25% 3%,75% 3%,100% 50%,75% 97%,25% 97%,0 50%);background:#f39a3d;"></div>
+            </div>
+            <div style="width:30px;height:30px;clip-path:polygon(25% 3%,75% 3%,100% 50%,75% 97%,25% 97%,0 50%);background:#f39a3d;margin-left:32px;margin-top:-4px;"></div>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;padding-right:2px;">
+        <sc-for list="{{ actions }}" as="a" hint-placeholder-count="2">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:8px;margin-top:{{ a.offset }}px;">
+            <div style="width:90px;height:90px;clip-path:polygon(25% 3%,75% 3%,100% 50%,75% 97%,25% 97%,0 50%);background:#000;display:flex;align-items:center;justify-content:center;">
+              <div style="width:82px;height:82px;clip-path:polygon(25% 3%,75% 3%,100% 50%,75% 97%,25% 97%,0 50%);background:{{ a.bg }};box-shadow:inset 0 -7px 0 {{ a.shade }};display:flex;align-items:center;justify-content:center;font-size:18px;color:{{ a.ink }};cursor:pointer;" style-active="transform:translateY(3px);filter:brightness(.85);">{{ a.key }}</div>
+            </div>
+            <sc-if value="{{ showLabels }}" hint-placeholder-val="{{ true }}"><div style="font-size:8px;color:#9a9aa6;letter-spacing:1px;">{{ a.label }}</div></sc-if>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:648,&quot;height&quot;:1184},&quot;texture&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;dimpled&quot;,&quot;ribbed&quot;,&quot;smooth&quot;],&quot;default&quot;:&quot;dimpled&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;showLabels&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;},&quot;bLabel&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;B&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const tex = this.props.texture ?? 'dimpled';
+    const ink = '#f6d98a';
+    const t = 'transparent';
+    const textures = {
+      dimpled: ['radial-gradient(circle at 50% 40%, #1d1d21 0 1.6px, transparent 2.2px)', '8px 8px'],
+      ribbed: ['repeating-linear-gradient(0deg, #17171a 0 2px, #0d0d0f 2px 6px)', 'auto'],
+      smooth: ['linear-gradient(#141417, #0a0a0b)', 'auto'],
+    };
+    const [texture, textureSize] = textures[tex] || textures.dimpled;
+    return {
+      texture, textureSize,
+      showLabels: this.props.showLabels ?? true,
+      dpad: [
+        { x: 0, y: 0, bw: `10px 14px 10px 0`, bc: `${t} ${ink} ${t} ${t}` },
+        { x: 100, y: 0, bw: `10px 0 10px 14px`, bc: `${t} ${t} ${t} ${ink}` },
+        { x: 50, y: 78, bw: `14px 10px 0 10px`, bc: `${ink} ${t} ${t} ${t}` },
+      ],
+      actions: [
+        { key: 'R', label: 'ROTATE', bg: '#d6249a', shade: '#8e1468', ink: '#fff', offset: 26 },
+        { key: 'B', label: this.props.bLabel ?? 'B', bg: '#f6d98a', shade: '#e08a2e', ink: '#3a2470', offset: -26 },
+      ],
+    };
+  }
+}
+</script>
+</body>
+</html>
