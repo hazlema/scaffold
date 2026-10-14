@@ -129,3 +129,9 @@ test('the tall screen scales by whole device pixels too',()=>{
  assert.equal(fitScale(820,1180,2,270,330),6);
  assert.equal(fitScale(1920,1080),4);
 });
+
+test('a phone reporting a whole-number CSS width still gets its full pixel scale',()=>{
+ assert.equal(fitScale(411,730,2.625,216,302),5);// 1080 px wide Android reporting 411 CSS px
+ assert.equal(fitScale(411,915,2.625,270,330),4);
+ assert.equal(fitScale(1919,1080),3);// a genuinely narrower desktop window does not round up
+});
