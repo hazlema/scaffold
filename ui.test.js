@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {fitScale,layoutBox,hit,menuKey,SETTING_ROWS,settingLabel,changeSetting,clock,startInitials,initialsKey,INITIAL_CHARS} from './ui.js';
+import {fitScale,layoutBox,hit,menuKey,SETTING_ROWS,settingLabel,changeSetting,clock,startInitials,initialsKey,INITIAL_CHARS,layoutFor} from './ui.js';
 import {DEFAULTS} from './settings.js';
 
 test('scale is a whole number of at least 1 for any window',()=>{
@@ -116,4 +116,16 @@ test('initials can be typed: a letter or digit fills the slot and moves on, Back
  assert.deepEqual(initialsKey(r.state,' ',false).state.chars,['M','7','Q']);// Space is the drop key: never types
  assert.deepEqual(initialsKey(r.state,'-',false).state.chars,['M','7','Q']);
  assert.deepEqual(initialsKey(startInitials(''),'m',true).state.chars,['A','A','A']);// held from play: ignored
+});
+
+test('screen mode follows the device: tall for an upright touch screen, a turn prompt sideways, wide otherwise',()=>{
+ assert.equal(layoutFor({coarse:true,width:390,height:844}),'tall');
+ assert.equal(layoutFor({coarse:true,width:844,height:390}),'rotate');
+ assert.equal(layoutFor({coarse:false,width:390,height:844}),'wide');
+ assert.equal(layoutFor({coarse:false,width:1920,height:1080}),'wide');
+});
+test('the tall screen scales by whole device pixels too',()=>{
+ assert.equal(fitScale(390,844,3,270,330),4);
+ assert.equal(fitScale(820,1180,2,270,330),6);
+ assert.equal(fitScale(1920,1080),4);
 });

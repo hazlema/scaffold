@@ -2,7 +2,9 @@
 import {measure} from './font.js';
 
 // Whole device pixels per game pixel, so 125% display scaling still gives square pixels.
-export const fitScale=(w,h,dpr=1)=>Math.max(1,Math.floor(Math.min(w*dpr/480,h*dpr/270)));
+export const fitScale=(w,h,dpr=1,LW=480,LH=270)=>Math.max(1,Math.floor(Math.min(w*dpr/LW,h*dpr/LH)));
+// Touch devices get the tall portrait screen when held upright and a turn prompt when sideways; everything else is wide.
+export const layoutFor=({coarse,width,height})=>coarse?(height>width?'tall':'rotate'):'wide';
 export const RESULT_LOCK_MS=600;
 // The results box ignores selects briefly so a mashed drop key cannot skip it; the pause box never locks.
 export const canSelect=(paused,endedAt,now)=>paused||now-endedAt>RESULT_LOCK_MS;
