@@ -4,15 +4,14 @@ import {C,PIECES,BEVEL,LIGHT_PIECES} from './palette.js';
 import {drawText,wrap,measure} from './font.js';
 import {scoreRow} from './scores.js';
 import {clock} from './ui.js';
-import {BUTTONS} from './touch.js';
 
 // Two screens: wide (desktop) and tall (a phone held upright). LAYOUT is the active one, mutated in place
 // by useLayout so everything that reads it (cellXY, banners, boxes, the table) follows the screen.
 export const LAYOUTS={
  wide:{name:'wide',W:480,H:270,BX:156,BY:14,cabinet:{x:150,y:8,w:159,h:255},panel:{x:318,y:8,w:154,h:255},
-  banner:{cx:229,y:70},table:{x:90,y:6,w:300,h:210,rowY:44,rowH:16,scale:2,rowX:18},actionsY:220,skyShift:0},
- tall:{name:'tall',W:270,H:330,BX:62,BY:58,cabinet:{x:56,y:52,w:159,h:255},strip:{x:4,y:4,w:262,h:40},
-  banner:{cx:135,y:90},table:{x:10,y:40,w:250,h:200,rowY:44,rowH:12,scale:1,rowX:56},actionsY:250,skyShift:105},
+  banner:{cx:229,y:70},table:{x:90,y:6,w:300,h:210,rowY:44,rowH:16,scale:2,rowX:18},actionsY:220,skyShift:0,menuY:72,settingsY:80,controlsY:220},
+ tall:{name:'tall',W:216,H:302,BX:34,BY:48,cabinet:{x:28,y:42,w:159,h:255},strip:{x:4,y:4,w:208,h:34},
+  banner:{cx:107,y:80},table:{x:6,y:6,w:204,h:200,rowY:44,rowH:12,scale:1,rowX:36},actionsY:214,skyShift:132,menuY:60,settingsY:70,controlsY:210},
 };
 export const LAYOUT={...LAYOUTS.wide};
 export function useLayout(name){for(const k of Object.keys(LAYOUT))delete LAYOUT[k];return Object.assign(LAYOUT,LAYOUTS[name]);}
@@ -114,12 +113,12 @@ export function drawDim(ctx){
  ctx.fillStyle=dimPattern;ctx.fillRect(0,0,LAYOUT.W,LAYOUT.H);
 }
 export function drawLogo(ctx,assets){
- const i=assets.images.logo,cx=LAYOUT.W/2;
- if(i)ctx.drawImage(i,Math.round(cx-i.width/2),10);
- else drawText(ctx,'SCAFFOLD',cx,20,C.orange,5,'center');
+ const tall=LAYOUT.name==='tall',i=assets.images[tall?'logo-small':'logo'],cx=LAYOUT.W/2;
+ if(i)ctx.drawImage(i,Math.round(cx-i.width/2),8);
+ else drawText(ctx,'SCAFFOLD',cx,20,C.orange,tall?4:5,'center');
 }
 export function drawControls(ctx){
- if(LAYOUT.name==='tall'){drawBox(ctx,75,222,120,20);drawText(ctx,'TAP TO CHOOSE',135,229,C.cream,1,'center');return;}
+ if(LAYOUT.name==='tall'){const y=LAYOUT.controlsY;drawBox(ctx,48,y,120,20);drawText(ctx,'TAP TO CHOOSE',108,y+7,C.cream,1,'center');return;}
  drawBox(ctx,92,220,296,32);
  drawText(ctx,'ARROWS STEER   UP X Z ROTATE   DOWN FASTER',240,227,C.cream,1,'center');
  drawText(ctx,'SHIFT CHANGE BEAT   SPACE DROP   P PAUSE',240,238,C.cream,1,'center');
@@ -226,65 +225,18 @@ export function drawScoreTable(ctx,entries,highlight,now,{title='HIGH SCORES',li
 }
 
 // ---- Tall (phone) screen ----
-// Text on the sunset gets a black backing so it stays readable on every band.
-function tag(ctx,text,x,y,color,scale=1){
- ctx.fillStyle=C.black;ctx.fillRect(x-1,y-1,measure(text,scale)+2,7*scale+2);
- drawText(ctx,text,x,y,color,scale);
-}
 export function drawStrip(ctx,game,{remaining,label,level=1,score=0}){
  const {x,y,w,h}=LAYOUT.strip;
  drawBox(ctx,x,y,w,h);
- drawText(ctx,'TIME',x+8,y+6,C.cream);
- drawText(ctx,clock(remaining),x+8,y+16,remaining<60000?C.hotpink:C.white,2);
- drawText(ctx,`LEVEL ${level}`,x+80,y+6,C.white);
- drawText(ctx,`SCORE ${score}`,x+80,y+16,C.white);
- drawText(ctx,`FLOORS ${game.height}/${game.target}`,x+80,y+26,C.white);
- drawText(ctx,label,x+170,y+6,C.lavender);
- drawText(ctx,`CUTS ${game.cuts}`,x+170,y+16,C.lavender);
- drawText(ctx,`GAPS ${game.gaps} REACH ${game.reach}`,x+170,y+26,C.lavender);
+ drawText(ctx,'TIME',x+6,y+5,C.cream);
+ drawText(ctx,clock(remaining),x+6,y+15,remaining<60000?C.hotpink:C.white,2);
+ drawText(ctx,`LEVEL ${level}`,x+70,y+5,C.white);
+ drawText(ctx,`SCORE ${score}`,x+70,y+14,C.white);
+ drawText(ctx,`FLOORS ${game.height}/${game.target}`,x+70,y+23,C.white);
+ drawText(ctx,label,x+148,y+5,C.lavender);
+ drawText(ctx,`CUTS ${game.cuts}`,x+148,y+14,C.lavender);
 }
-// NEXT sits in the left strip and the beat in the right strip, above the buttons.
-export function drawTallSides(ctx,game){
- tag(ctx,'NEXT',4,60,C.cream);
- drawMini(ctx,game.next,28,98);
- tag(ctx,'BEAT',219,60,C.cream);
- if(game.piece&&game.active()&&game.fits(game.lower())){
-  const se=game.stepDir()==='se';
-  tag(ctx,se?'TICK':'TOCK',219,72,C.yellow);
-  tag(ctx,se?'▶':'◀',230,84,C.yellow,3);
- }
-}
-export function drawMessage(ctx,message){wrap(message,42,2).forEach((line,i)=>tag(ctx,line,6,311+i*9,C.white));}
-
-// Touch buttons: bevelled hexes like the pieces, from cached pixel masks; a pressed one flips its bevel.
-export const BUTTON_R=13;
-const BUTTON_STYLE={left:[C.violet,C.lavender,C.indigo,C.white],right:[C.violet,C.lavender,C.indigo,C.white],
- down:[C.violet,C.lavender,C.indigo,C.white],rotate:[C.magenta,C.pink,C.purple,C.white],beat:[C.yellow,C.white,C.orange,C.black]};
 const inPointyHex=(x,y,r)=>{const ax=Math.abs(x),ay=Math.abs(y);return ax<=Math.sqrt(3)/2*r&&ay<=r-ax/Math.sqrt(3);};
-const BUTTON_TILES=new Map();
-function buttonTile(name,pressed){
- const key=name+pressed;let t=BUTTON_TILES.get(key);if(t)return t;
- const R=BUTTON_R,o=R+1,[fill,light,dark]=BUTTON_STYLE[name],[hi,lo]=pressed?[dark,light]:[light,dark];
- t=canvas(2*o+1,2*o+1);const g=t.getContext('2d');
- for(let y=-o;y<=o;y++)for(let x=-o;x<=o;x++){
-  if(!inPointyHex(x,y,R+1))continue;
-  let col=C.black;
-  if(inPointyHex(x,y,R)){
-   if(!inPointyHex(x-1,y,R)||!inPointyHex(x,y-1,R))col=hi;
-   else if(!inPointyHex(x+1,y,R)||!inPointyHex(x,y+1,R))col=lo;
-   else col=fill;
-  }
-  g.fillStyle=col;g.fillRect(x+o,y+o,1,1);
- }
- BUTTON_TILES.set(key,t);return t;
-}
-export function drawButtons(ctx,isPressed){
- for(const b of BUTTONS){
-  const p=isPressed(b.name);
-  ctx.drawImage(buttonTile(b.name,p),b.x-BUTTON_R-1,b.y-BUTTON_R-1);
-  drawText(ctx,b.label,b.x+(p?1:0),b.y-3+(p?1:0),BUTTON_STYLE[b.name][3],1,'center');
- }
-}
 // Shown on a touch device held sideways (drawn on the wide canvas): a slowly turning hex.
 export function drawRotate(ctx,now){
  const cx=240,cy=110,a=now/900,cos=Math.cos(a),sin=Math.sin(a);

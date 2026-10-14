@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {createTouch,hitButton,BUTTONS} from './touch.js';
+import {createTouch} from './touch.js';
 
 test('a tap on a steer button moves once; holding repeats after 170 ms, then every 50 ms',()=>{
  const t=createTouch();
@@ -49,15 +49,6 @@ test('two thumbs work together; lifting one keeps the other; clear releases ever
  assert.equal(t.isPressed('left'),false);
  assert.deepEqual(t.tick(9999),[]);
  assert.deepEqual(t.up(99,0),[]);// a finger we never saw is ignored
-});
-test('hitButton: nearest button within each side strip, pause on the readout, nothing on the board',()=>{
- for(const b of BUTTONS)assert.equal(hitButton(b.x,b.y),b.name);
- assert.equal(hitButton(2,262),'left');
- assert.equal(hitButton(30,300),'down');
- assert.equal(hitButton(268,240),'beat');
- assert.equal(hitButton(135,20),'pause');
- assert.equal(hitButton(135,280),null);// the board
- assert.equal(hitButton(20,200),null);// a strip, but above the buttons
 });
 test('a steer button held through a long gap does not fire the missed repeats all at once',()=>{
  const t=createTouch();t.down(1,'left',0);

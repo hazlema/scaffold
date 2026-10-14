@@ -7,3 +7,39 @@ body{display:grid;place-items:center}
 @keyframes scan{to{background-position:0 calc(var(--px,1px)*3)}}
 @media (prefers-reduced-motion:reduce){#scan{animation:none}}
 #game{touch-action:none}
+/* Phone controller deck (tall mode only), after docs/mock/Mobile Controls.dc.html. --u = one mock unit = deck width / 648. */
+@font-face{font-family:'Press Start 2P';src:url(assets/fonts/PressStart2P-Regular.ttf) format('truetype');font-display:block}
+#deck{display:none}
+body.tall{display:flex;flex-direction:column;align-items:center}
+body.tall #deck{display:flex;flex-direction:column;gap:calc(var(--u)*16);box-sizing:border-box;width:var(--deck-w);flex:1;min-height:calc(var(--u)*292);padding:calc(var(--u)*18) calc(var(--u)*14) calc(var(--u)*22);font-family:'Press Start 2P',monospace;background:#0d0d0f radial-gradient(circle at 50% 40%,#1d1d21 0 calc(var(--u)*1.6),transparent calc(var(--u)*2.2)) 0 0/calc(var(--u)*8) calc(var(--u)*8);box-shadow:inset 0 6px 10px rgba(0,0,0,.9),inset 0 2px 0 #2a2a2e;border-top:3px solid #000;touch-action:none}
+.lcd{display:flex;align-items:center;justify-content:space-between;gap:calc(var(--u)*12);background:#050506;border-radius:calc(var(--u)*6);box-shadow:inset 0 2px 4px #000,0 1px 0 #26262a;padding:calc(var(--u)*10) calc(var(--u)*14)}
+.goal{display:flex;align-items:center;gap:calc(var(--u)*10);min-width:0;font-size:calc(var(--u)*12);color:#f6d98a;letter-spacing:calc(var(--u)*1);white-space:nowrap;overflow:hidden}
+.goal b{color:#8a6fe0;font-weight:normal}
+.msg{overflow:hidden}
+.beat{display:flex;align-items:center;gap:calc(var(--u)*8);font-size:calc(var(--u)*10);color:#8a6fe0}
+.beat i{width:calc(var(--u)*12);height:calc(var(--u)*12);background:#2a2a30}
+.beat i.on{background:#f6d98a;box-shadow:0 0 calc(var(--u)*8) #f6d98a}
+.pads{flex:1;display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:calc(var(--u)*12)}
+.dpad{position:relative;width:calc(var(--u)*196);height:calc(var(--u)*170)}
+.hexbtn{display:flex;align-items:center;justify-content:center;background:#000;clip-path:polygon(25% 3%,75% 3%,100% 50%,75% 97%,25% 97%,0 50%)}
+.dpad .hexbtn{position:absolute;width:calc(var(--u)*82);height:calc(var(--u)*82)}
+.face{display:flex;align-items:center;justify-content:center;clip-path:polygon(25% 3%,75% 3%,100% 50%,75% 97%,25% 97%,0 50%)}
+.dpad .face{width:calc(var(--u)*74);height:calc(var(--u)*74);background:linear-gradient(#7f63d6,#5a3fb0);box-shadow:inset 0 calc(var(--u)*-6) 0 #3e2a86}
+.hexbtn.down .face{transform:translateY(calc(var(--u)*3));filter:brightness(.85)}
+.tri{width:0;height:0;border-style:solid;border-color:transparent}
+.tri.l{border-width:calc(var(--u)*10) calc(var(--u)*14) calc(var(--u)*10) 0;border-right-color:#f6d98a}
+.tri.r{border-width:calc(var(--u)*10) 0 calc(var(--u)*10) calc(var(--u)*14);border-left-color:#f6d98a}
+.tri.d{border-width:calc(var(--u)*14) calc(var(--u)*10) 0 calc(var(--u)*10);border-top-color:#f6d98a}
+.next{display:flex;flex-direction:column;align-items:center;gap:calc(var(--u)*10)}
+.next span{font-size:calc(var(--u)*10);color:#8a6fe0;letter-spacing:calc(var(--u)*2)}
+.win{position:relative;width:calc(var(--u)*150);height:calc(var(--u)*96);border-radius:calc(var(--u)*8);background:#050506;box-shadow:inset 0 2px 5px #000,0 1px 0 #26262a}
+.win i{position:absolute;clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%)}
+.acts{display:flex;gap:calc(var(--u)*8);align-items:center;padding-right:2px}
+.act{display:flex;flex-direction:column;align-items:center;gap:calc(var(--u)*8)}
+.act.low{margin-top:calc(var(--u)*26)}
+.act.high{margin-top:calc(var(--u)*-26)}
+.act .hexbtn{width:calc(var(--u)*90);height:calc(var(--u)*90)}
+.act .face{width:calc(var(--u)*82);height:calc(var(--u)*82);font-size:calc(var(--u)*18)}
+.rot .face{background:#d6249a;color:#fff;box-shadow:inset 0 calc(var(--u)*-7) 0 #8e1468}
+.bt .face{background:#f6d98a;color:#3a2470;box-shadow:inset 0 calc(var(--u)*-7) 0 #e08a2e}
+.act>span{font-size:calc(var(--u)*8);color:#9a9aa6;letter-spacing:calc(var(--u)*1)}

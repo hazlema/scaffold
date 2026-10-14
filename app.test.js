@@ -21,7 +21,10 @@ const keyup=k=>listeners.keyup.forEach(f=>f({key:k}));
 // Build the level's target height of solid floors, then let the engine judge it as a lock would.
 const clearLevel=()=>{for(let r=20-latest.target;r<20;r++)latest.board[r].fill(1);latest.resolve([20-latest.target]);};
 // A pointer event at a logical position, for the stubbed canvas (its rect is always 480x270 CSS px).
-const touchAt=(type,id,lx,ly,{w=270,h=330,pointerType='touch'}={})=>listeners[type]?.forEach(f=>f({pointerId:id,pointerType,clientX:lx*480/w,clientY:ly*270/h,preventDefault(){}}));
+const touchAt=(type,id,lx,ly,{w=216,h=302,pointerType='touch'}={})=>listeners[type]?.forEach(f=>f({pointerId:id,pointerType,clientX:lx*480/w,clientY:ly*270/h,preventDefault(){}}));
+  // A pointer event on a deck button (the stubbed deck reads the button id from the target).
+  const press=(type,id,btn,pointerType='touch')=>listeners[type]?.forEach(f=>f({pointerId:id,pointerType,target:{dataset:{btn}},preventDefault(){}}));
+  
 const turn=(width,height)=>{globalThis.innerWidth=width;globalThis.innerHeight=height;listeners.resize.forEach(f=>f());tick();};
 
 test('a level that starts while the window is unfocused opens paused',()=>{
@@ -47,31 +50,35 @@ test('a soft drop held as the run ends cannot change the initials',()=>{
  assert.equal(saved.entries[0].diff,'E');
 });
 
-test('desktop: mouse or stray pointer presses never act as touch buttons',()=>{
+test('desktop: deck presses and stray pointers never act as touch buttons',()=>{
  key('Escape');tick();// leave the results table for the menu
  key('Enter');tick();// start a run
  const q=latest.piece.q;
- touchAt('pointerdown',7,15,268,{w:480,h:270});touchAt('pointerup',7,15,268,{w:480,h:270});
- touchAt('pointerdown',8,15,268,{w:480,h:270,pointerType:'mouse'});touchAt('pointerup',8,15,268,{w:480,h:270});
+ press('pointerdown',7,'left');press('pointerup',7,'left');
+ press('pointerdown',8,'left','mouse');press('pointerup',8,'left');
+ touchAt('pointerdown',9,108,20,{w:480,h:270});
  assert.equal(latest.piece.q,q);
+ assert.equal(latest.paused,false);
 });
-test('upright phone: buttons steer, a double tap on down hard-drops, the top bar pauses',()=>{
+test('upright phone: deck buttons steer, a double tap on down hard-drops, the top bar pauses',()=>{
  globalThis.matchMedia=()=>({matches:true});
  turn(390,844);
  const q=latest.piece.q;
- touchAt('pointerdown',1,15,268);touchAt('pointerup',1,15,268);
+ press('pointerdown',1,'left');press('pointerup',1,'left');
  assert.equal(latest.piece.q,q-1);
  const placed=latest.placed;
- touchAt('pointerdown',2,27,290);touchAt('pointerup',2,27,290);
- touchAt('pointerdown',3,27,290);touchAt('pointerup',3,27,290);
+ press('pointerdown',2,'down');press('pointerup',2,'down');
+ press('pointerdown',3,'down');press('lostpointercapture',3,'down');// a dropped capture releases like a lift
  assert.equal(latest.placed,placed+1);
- touchAt('pointerdown',4,135,20);touchAt('pointerup',4,135,20);
+ touchAt('pointerdown',4,108,20);
  assert.equal(latest.paused,true);
- touchAt('pointerdown',5,135,20);touchAt('pointerup',5,135,20);
+ press('pointerdown',5,'left');assert.equal(latest.paused,true);// deck presses do nothing while paused
+ press('pointerup',5,'left');
+ touchAt('pointerdown',6,108,20);
  assert.equal(latest.paused,false);
 });
 test('turning the phone sideways pauses the run; back upright it waits on the PAUSED box',()=>{
- touchAt('pointerdown',6,27,290);// holding soft drop as the phone turns
+ press('pointerdown',6,'down');// holding soft drop as the phone turns
  turn(844,390);
  assert.equal(latest.paused,true);
  turn(390,844);
