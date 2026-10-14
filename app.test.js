@@ -77,3 +77,22 @@ test('turning the phone sideways pauses the run; back upright it waits on the PA
  turn(390,844);
  assert.equal(latest.paused,true);
 });
+test('sideways freezes the game: no level starts behind the turn prompt and taps there reach nothing',()=>{
+ key('p');tick();// resume the run left paused by the previous test
+ assert.equal(latest.paused,false);
+ clearLevel();tick();
+ assert.equal(latest.status,'won');// the LEVEL CLEAR banner is up
+ const cleared=latest;
+ turn(844,390);
+ for(let i=0;i<30;i++)tick();
+ assert.equal(latest,cleared,'the next level must not start while the phone is sideways');
+ turn(390,844);
+ for(let i=0;i<17;i++)tick();
+ assert.notEqual(latest,cleared,'upright again, the banner finishes and the next level starts');
+ key('p');key('ArrowDown');key('Enter');tick();// pause box: MENU
+ const atMenu=latest;
+ turn(844,390);
+ touchAt('click',10,240,116,{w:480,h:270});tick();// a tap where the hidden menu's MEDIUM row sits
+ assert.equal(latest,atMenu,'a tap on the turn prompt must not start a run');
+ turn(390,844);
+});

@@ -41,7 +41,11 @@ export function createTouch({das=170,arr=50,doubleTap=250}={}){
   },
   tick(t){
    const out=[];
-   for(const f of fingers.values())if(f.button==='left'||f.button==='right')while(t>=f.next){out.push(`${f.button}-repeat`);f.next+=arr;}
+   for(const f of fingers.values()){
+    if(f.button!=='left'&&f.button!=='right')continue;
+    if(t-f.next>2*arr){f.next=t+arr;continue;}// a long gap (a banner, a stall): resume the slide, don't burst
+    while(t>=f.next){out.push(`${f.button}-repeat`);f.next+=arr;}
+   }
    return out;
   },
   clear(){const was=held('down');fingers.clear();return was?['soft-off']:[];},

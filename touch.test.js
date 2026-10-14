@@ -59,3 +59,11 @@ test('hitButton: nearest button within each side strip, pause on the readout, no
  assert.equal(hitButton(135,280),null);// the board
  assert.equal(hitButton(20,200),null);// a strip, but above the buttons
 });
+test('a steer button held through a long gap does not fire the missed repeats all at once',()=>{
+ const t=createTouch();t.down(1,'left',0);
+ assert.deepEqual(t.tick(170),['left-repeat']);
+ assert.deepEqual(t.tick(1700),[]);// e.g. across the LEVEL CLEAR banner: resume, no burst
+ assert.deepEqual(t.tick(1749),[]);
+ assert.deepEqual(t.tick(1750),['left-repeat']);
+ assert.deepEqual(t.tick(1850),['left-repeat','left-repeat']);// ordinary frame jitter still catches up
+});

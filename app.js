@@ -151,8 +151,9 @@ function activeRows(){
  return null;
 }
 function setCursor(i){if(screen==='menu')cursor=i;else if(screen==='settings')settingsCursor=i;else boxCursor=i;}
-canvas.addEventListener('mousemove',e=>{const rows=activeRows();if(!rows)return;const i=hit(rows,...toCanvas(e));if(i>=0)setCursor(i);});
+canvas.addEventListener('mousemove',e=>{if(mode==='rotate')return;const rows=activeRows();if(!rows)return;const i=hit(rows,...toCanvas(e));if(i>=0)setCursor(i);});
 canvas.addEventListener('click',e=>{
+ if(mode==='rotate')return;// the turn prompt covers everything: taps must not reach hidden menus
  const rows=activeRows();if(!rows)return;const i=hit(rows,...toCanvas(e));if(i<0)return;setCursor(i);
  if(screen==='menu')menuInput('Enter',false);else if(screen==='settings')settingsInput('Enter',false);
  else if(screen==='scores')scoresInput('Enter',false);else playInput('Enter',false);
@@ -215,7 +216,8 @@ function draw(now){
 }
 function frame(now){
  const dt=Math.min(100,Math.max(0,now-last));last=now;
- if(screen==='play'){
+ // Sideways on a touch device the game is frozen behind the turn prompt, banners included.
+ if(screen==='play'&&mode!=='rotate'){
   if(phase==='playing'){if(mode==='tall')for(const a of touch.tick(now))touchAction(a);game.update(dt,soft);handleEvents(now);checkEnd(now);}
   else if(phase==='clear'&&now-phaseAt>=CLEAR_MS){
    run=onLevelWon(run);startLevel();note(`LEVEL ${run.level}. DROPS ARE FASTER.`);
