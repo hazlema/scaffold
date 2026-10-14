@@ -24,6 +24,8 @@ The included server binds to your own computer only and serves the game's public
 
 Arrow left/right: steer. Up or X: rotate clockwise 60°. Z: rotate counterclockwise. Down: descend faster. Shift (left or right): change beat, so the next step down goes the other diagonal (SW instead of SE, or the reverse). Space: hard drop. P/Escape: pause. Leaving the browser pauses automatically. The white dot marks the pivot and its arrow points the way the next step will go; the readout panel shows TICK (SE) or TOCK (SW). The outline marks the landing position. Menus work with the arrow keys and Enter, or the mouse.
 
+**On a phone:** hold it upright. The game switches to a tall screen with five hex buttons beside the board: ◀ ▶ steer (hold to slide), V soft-drops while held and hard-drops on a double tap, R rotates, B changes the beat. Tap the bar at the top to pause. While entering initials the same buttons pick letters (R/V change the letter, ◀ ▶ move, B saves). Turning the phone sideways pauses the game until you turn it back.
+
 **Look:** everything is drawn at 480×270 in a fixed 16-colour palette, scaled up with square pixels, under drifting CRT scanlines (strength in Settings). Source art lives in `art/`; `python3 scripts/assets.py` (needs Pillow) converts it into `assets/`. Run it again only when the art changes.
 
 **Difficulty** is chosen on the title menu and sets every rule of a run:
