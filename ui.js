@@ -4,6 +4,8 @@ import {measure} from './font.js';
 // Whole device pixels per game pixel. Browsers report a whole-number CSS width (411 for 411.43),
 // so allow half a CSS pixel or a 1080 px phone loses a full step of scale.
 export const fitScale=(w,h,dpr=1,LW=480,LH=270)=>Math.max(1,Math.floor(Math.min((w+.5)*dpr/LW,(h+.5)*dpr/LH)));
+// The phone deck is at least 292 of 648 mock units tall at the game's width, so count it as extra logical height.
+export const deckFitScale=(w,h,dpr,LW,LH)=>fitScale(w,h,dpr,LW,LH+292*LW/648);
 // Touch devices get the tall portrait screen when held upright and a turn prompt when sideways; everything else is wide.
 export const layoutFor=({coarse,width,height})=>coarse?(height>width?'tall':'rotate'):'wide';
 export const RESULT_LOCK_MS=600;

@@ -13,9 +13,10 @@ body{display:grid;place-items:center}
 body.tall{display:flex;flex-direction:column;align-items:center}
 body.tall #deck{display:flex;flex-direction:column;gap:calc(var(--u)*16);box-sizing:border-box;width:var(--deck-w);flex:1;min-height:calc(var(--u)*292);padding:calc(var(--u)*18) calc(var(--u)*14) calc(var(--u)*22);font-family:'Press Start 2P',monospace;background:#0d0d0f radial-gradient(circle at 50% 40%,#1d1d21 0 calc(var(--u)*1.6),transparent calc(var(--u)*2.2)) 0 0/calc(var(--u)*8) calc(var(--u)*8);box-shadow:inset 0 6px 10px rgba(0,0,0,.9),inset 0 2px 0 #2a2a2e;border-top:3px solid #000;touch-action:none}
 .lcd{display:flex;align-items:center;justify-content:space-between;gap:calc(var(--u)*12);background:#050506;border-radius:calc(var(--u)*6);box-shadow:inset 0 2px 4px #000,0 1px 0 #26262a;padding:calc(var(--u)*10) calc(var(--u)*14)}
-.goal{display:flex;align-items:center;gap:calc(var(--u)*10);min-width:0;font-size:calc(var(--u)*12);color:#f6d98a;letter-spacing:calc(var(--u)*1);white-space:nowrap;overflow:hidden}
-.goal b{color:#8a6fe0;font-weight:normal}
-.msg{overflow:hidden}
+/* Two lines, so penalty notes (CUTBACK… STAYS UNFINISHED) are never cut off; the fixed height keeps the deck from jumping. */
+.goal{display:flex;align-items:flex-start;gap:calc(var(--u)*10);min-width:0;font-size:calc(var(--u)*12);line-height:1.5;height:calc(var(--u)*36);color:#f6d98a;letter-spacing:calc(var(--u)*1);overflow:hidden}
+.goal b{color:#8a6fe0;font-weight:normal;flex:none}
+.msg{overflow:hidden;overflow-wrap:anywhere}
 .beat{display:flex;align-items:center;gap:calc(var(--u)*8);font-size:calc(var(--u)*10);color:#8a6fe0}
 .beat i{width:calc(var(--u)*12);height:calc(var(--u)*12);background:#2a2a30}
 .beat i.on{background:#f6d98a;box-shadow:0 0 calc(var(--u)*8) #f6d98a}

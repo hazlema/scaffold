@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {fitScale,layoutBox,hit,menuKey,SETTING_ROWS,settingLabel,changeSetting,clock,startInitials,initialsKey,INITIAL_CHARS,layoutFor} from './ui.js';
+import {fitScale,layoutBox,hit,menuKey,SETTING_ROWS,settingLabel,changeSetting,clock,startInitials,initialsKey,INITIAL_CHARS,layoutFor,deckFitScale} from './ui.js';
 import {DEFAULTS} from './settings.js';
 
 test('scale is a whole number of at least 1 for any window',()=>{
@@ -134,4 +134,10 @@ test('a phone reporting a whole-number CSS width still gets its full pixel scale
  assert.equal(fitScale(411,730,2.625,216,302),5);// 1080 px wide Android reporting 411 CSS px
  assert.equal(fitScale(411,915,2.625,270,330),4);
  assert.equal(fitScale(1919,1080),3);// a genuinely narrower desktop window does not round up
+});
+test('the phone deck is counted at the game width, so wider screens still get the biggest scale that fits',()=>{
+ assert.equal(deckFitScale(768,1024,2,216,302),5);// iPad portrait: 4x before the fix
+ assert.equal(deckFitScale(700,760,2,216,302),3);// a short wide screen: 2x before the fix
+ assert.equal(deckFitScale(411,775,2.625,216,302),5);// the user's phone, height read from their screenshot
+ assert.equal(deckFitScale(412,750,2.625,216,302),4);// a shorter browser area drops a step
 });

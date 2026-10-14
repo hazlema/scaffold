@@ -4,7 +4,7 @@ import {loadAssets} from './assets.js';
 import {loadSettings,saveSettings} from './settings.js';
 import {loadScores,saveScores,qualifies,insertScore} from './scores.js';
 import {DIFFICULTY,DIFFICULTY_ORDER,createRun,levelOptions,onLevelWon,runFloors,runScore,isRunOver} from './run.js';
-import {fitScale,layoutFor,layoutBox,hit,menuKey,SETTING_ROWS,settingLabel,changeSetting,canSelect,startInitials,initialsKey,clock} from './ui.js';
+import {fitScale,deckFitScale,layoutFor,layoutBox,hit,menuKey,SETTING_ROWS,settingLabel,changeSetting,canSelect,startInitials,initialsKey,clock} from './ui.js';
 import {LAYOUT,useLayout,drawSky,drawBackdrop,drawSprites,drawDim,drawBox,drawItems,drawLogo,drawControls,MENU_SCENERY,PLAY_SCENERY,drawBoard,drawPanel,drawBanner,drawScoreTable,drawStrip,drawRotate} from './render.js';
      import {createTouch} from './touch.js';
      import {createDeck} from './deck.js';
@@ -31,7 +31,7 @@ function resize(){
  }
  // On a phone the game screen fills the width and the controller deck takes the rest (at least 0.45 of the width).
  const dpr=window.devicePixelRatio||1,tall=mode==='tall';
- const s=fitScale(innerWidth,tall?innerHeight-.45*innerWidth:innerHeight,dpr,LAYOUT.W,LAYOUT.H),w=LAYOUT.W*s/dpr;
+ const s=(tall?deckFitScale:fitScale)(innerWidth,innerHeight,dpr,LAYOUT.W,LAYOUT.H),w=LAYOUT.W*s/dpr;
  screenEl.style.width=`${w}px`;screenEl.style.height=`${LAYOUT.H*s/dpr}px`;
  screenEl.style.setProperty('--px',`${1/dpr}px`);// scanlines stay one device pixel thin
  document.body?.classList?.toggle('tall',tall);
