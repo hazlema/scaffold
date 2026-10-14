@@ -4,7 +4,7 @@ const image=src=>new Promise((resolve,reject)=>{const i=new Image();i.onload=()=
 export async function loadAssets(base='assets/',{fetchJson=json,loadImage=image}={}){
  const out={manifest:null,images:{}};
  try{out.manifest=await fetchJson(`${base}manifest.json`);}catch{return out;}
- const names=['backdrop','logo',...Object.keys(out.manifest.sprites??{})];
+ const names=['backdrop','logo','logo-small',...Object.keys(out.manifest.sprites??{})];
  await Promise.all(names.map(async n=>{try{out.images[n]=await loadImage(`${base}${n}.png`);}catch{}}));
  return out;
 }

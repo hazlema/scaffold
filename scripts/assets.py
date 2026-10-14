@@ -27,6 +27,7 @@ SPRITE_ROWS = [
 KEY_TOLERANCE = 110   # RGB distance from the magenta key that still counts as background
 SKY_TOLERANCE = 48    # distance from a row's median colour that counts as sky band
 LOGO_WIDTH = 240
+LOGO_SMALL_WIDTH = 200   # the phone screen is 216 wide
 # The sun is drawn by the game (in the palette it would vanish into the yellow band):
 # centre x, centre y, radius at 480x270, measured from art/backdrop.png.
 SUN = {'x': 313, 'y': 187, 'r': 19}
@@ -167,13 +168,13 @@ def sprites(scale):
     return out
 
 
-def logo():
+def logo(width=LOGO_WIDTH):
     img = Image.open(ART / 'logo.png').convert('RGB')
     mask = key_mask(img, border_key(img), flood=True)
     box = mask.getbbox()
     w, h = box[2] - box[0], box[3] - box[1]
     # The logo is warm colours only; without this, blended edge pixels snap to green.
-    return shrink(img.crop(box), mask.crop(box), (LOGO_WIDTH, round(h * LOGO_WIDTH / w)),
+    return shrink(img.crop(box), mask.crop(box), (width, round(h * width / w)),
                   exclude=('3fbf6a', '3ec8f0', '14199a', '121871', '32209d'))
 
 
@@ -292,6 +293,10 @@ def main():
     check('logo', lg)
     lg.save(OUT / 'logo.png')
     manifest['logo'] = list(lg.size)
+    small = logo(LOGO_SMALL_WIDTH)
+    check('logo-small', small)
+    small.save(OUT / 'logo-small.png')
+    manifest['logoSmall'] = list(small.size)
     bd, horizon, bands = backdrop()
     check('backdrop', bd)
     bd.save(OUT / 'backdrop.png')

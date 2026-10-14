@@ -16,6 +16,9 @@ test('manifest lists all 13 sprites with on-screen sizes and their files exist',
  for(const f of ['backdrop','logo'])assert.ok(existsSync(new URL(`./assets/${f}.png`,import.meta.url)),f);
  assert.deepEqual(m.size,[480,270]);
  assert.ok(m.logo[0]>=230&&m.logo[0]<=240,`logo width ${m.logo[0]}`);// cropping transparent edges may trim a pixel or two
+ assert.ok(m.logoSmall&&m.logoSmall[0]>=190&&m.logoSmall[0]<=200,`small logo ${m.logoSmall}`);
+ assert.ok(existsSync(new URL('./assets/logo-small.png',import.meta.url)));
+ for(const f of ['PressStart2P-Regular.ttf','OFL.txt'])assert.ok(existsSync(new URL(`./assets/fonts/${f}`,import.meta.url)),f);
 });
 test('sky bands are palette colors that tile the sky down to the horizon',()=>{
  const m=manifest();
@@ -35,6 +38,6 @@ test('loadAssets survives a missing manifest and missing images',async()=>{
  const m={sprites:{gem:[10,10],'cube-blue':[5,5]}};
  const some=await loadAssets('x/',{fetchJson:async()=>m,loadImage:async src=>{if(src.includes('gem'))throw new Error('404');return {src};}});
  assert.equal(some.manifest,m);
- assert.deepEqual(Object.keys(some.images).sort(),['backdrop','cube-blue','logo']);
+ assert.deepEqual(Object.keys(some.images).sort(),['backdrop','cube-blue','logo','logo-small']);
  assert.equal(some.images['cube-blue'].src,'x/cube-blue.png');
 });

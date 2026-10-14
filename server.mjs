@@ -4,7 +4,7 @@ import {extname} from 'node:path';
 import {GAME_FILES,ASSET_PATH} from './scripts/files.mjs';
 
 const port=Number(process.env.PORT||4173);
-const TYPES={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.json':'application/json; charset=utf-8','.png':'image/png'};
+const TYPES={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.json':'application/json; charset=utf-8','.png':'image/png','.ttf':'font/ttf','.txt':'text/plain; charset=utf-8'};
 function resolve(url){
  let path;try{path=decodeURIComponent((url||'/').split('?')[0]);}catch{return null;}
  if(path==='/')return 'index.html';
