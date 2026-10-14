@@ -1,6 +1,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {LAYOUT,HEX_W,HEX_H,HEX_PIXELS,HEX_BOTTOM,edgeOf,cellXY,PANEL_LINES,BANNER,bannerHeight,SCORE_TABLE,LAYOUTS,useLayout} from './render.js';
+import {LAYOUT,HEX_W,HEX_H,HEX_PIXELS,HEX_BOTTOM,edgeOf,cellXY,PANEL_LINES,BANNER,bannerHeight,SCORE_TABLE,LAYOUTS,useLayout,BUTTON_R} from './render.js';
+import {BUTTONS} from './touch.js';
 import {layoutBox} from './ui.js';
 import {measure} from './font.js';
 import {Game,WIDTH,HEIGHT} from './engine.js';
@@ -99,4 +100,21 @@ test('tall: the board, table, actions, banner and menus fit 270x330',()=>{
   const settings=layoutBox(['EDGE LANES OFF','SOUND OFF','SCANLINES 0.6','BACK'],{cx:W/2,y:80,minWidth:200});
   assert.ok(settings.x>=0&&settings.x+settings.w<=W);
  }finally{useLayout('wide');}
+});
+
+test('tall: buttons sit in the side strips, clear of the cabinet, each other and the screen edge',()=>{
+ const {cabinet:k,W,H}=LAYOUTS.tall,half=BUTTON_R*Math.sqrt(3)/2+1;
+ for(const b of BUTTONS){
+  assert.ok(b.x-half>=0&&b.x+half<=W&&b.y+BUTTON_R+1<=H,b.name);
+  assert.ok(b.x+half<=k.x||b.x-half>=k.x+k.w,`${b.name} overlaps the board`);
+ }
+ for(const a of BUTTONS)for(const c of BUTTONS)if(a!==c)assert.ok(Math.hypot(a.x-c.x,a.y-c.y)>=2*half,`${a.name}/${c.name}`);
+});
+test('tall readout strip, side labels and message lines fit',()=>{
+ const s=LAYOUTS.tall.strip,k=LAYOUTS.tall.cabinet;
+ assert.ok(8+measure('05:00',2)<=80,'clock');
+ assert.ok(80+measure('FLOORS 12/12',1)<=170&&80+measure('SCORE 999999',1)<=170,'middle column');
+ assert.ok(170+measure('GAPS 0 REACH 4',1)<=s.w-3&&26+7<=s.h-3,'right column');
+ assert.ok(4+measure('NEXT',1)<=k.x&&219+measure('TICK',1)<=270&&230+measure('▶',3)<=270,'side labels');
+ assert.ok(6+measure('X'.repeat(42),1)<=264&&320+7<=LAYOUTS.tall.H,'message');
 });
