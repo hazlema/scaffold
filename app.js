@@ -4,8 +4,9 @@ import {loadAssets} from './assets.js';
 import {loadSettings,saveSettings} from './settings.js';
 import {loadScores,saveScores,qualifies,insertScore} from './scores.js';
 import {DIFFICULTY,DIFFICULTY_ORDER,createRun,levelOptions,onLevelWon,runFloors,runScore,isRunOver} from './run.js';
-import {fitScale,layoutBox,hit,menuKey,SETTING_ROWS,settingLabel,changeSetting,canSelect,startInitials,initialsKey,clock} from './ui.js';
-import {LAYOUT,drawSky,drawBackdrop,drawSprites,drawDim,drawBox,drawItems,drawLogo,drawControls,MENU_SCENERY,PLAY_SCENERY,drawBoard,drawPanel,drawBanner,drawScoreTable} from './render.js';
+import {fitScale,layoutFor,layoutBox,hit,menuKey,SETTING_ROWS,settingLabel,changeSetting,canSelect,startInitials,initialsKey,clock} from './ui.js';
+import {LAYOUT,useLayout,drawSky,drawBackdrop,drawSprites,drawDim,drawBox,drawItems,drawLogo,drawControls,MENU_SCENERY,PLAY_SCENERY,drawBoard,drawPanel,drawBanner,drawScoreTable,drawStrip,drawTallSides,drawButtons,drawMessage,drawRotate} from './render.js';
+import {createTouch,hitButton} from './touch.js';
 
 const canvas=document.getElementById('game'),ctx=canvas.getContext('2d'),screenEl=document.getElementById('screen'),scanEl=document.getElementById('scan');
 ctx.imageSmoothingEnabled=false;
@@ -17,12 +18,20 @@ let flash=null,offcut=null,message='',messageUntil=0,entry=null,result=null,high
 const CLEAR_MS=1500;
 loadAssets().then(a=>{assets=a;});
 
+let mode='wide';const touch=createTouch();
+// The screen follows the device: the tall screen on a touch device held upright, a turn prompt when it's sideways.
 function resize(){
- const dpr=window.devicePixelRatio||1,s=fitScale(innerWidth,innerHeight,dpr);
- screenEl.style.width=`${480*s/dpr}px`;screenEl.style.height=`${270*s/dpr}px`;
+ const next=layoutFor({coarse:!!window.matchMedia?.('(pointer: coarse)')?.matches,width:innerWidth,height:innerHeight});
+ if(next!==mode){
+  mode=next;useLayout(mode==='tall'?'tall':'wide');
+  canvas.width=LAYOUT.W;canvas.height=LAYOUT.H;ctx.imageSmoothingEnabled=false;
+  releaseTouches();if(mode==='rotate')blur();
+ }
+ const dpr=window.devicePixelRatio||1,s=fitScale(innerWidth,innerHeight,dpr,LAYOUT.W,LAYOUT.H);
+ screenEl.style.width=`${LAYOUT.W*s/dpr}px`;screenEl.style.height=`${LAYOUT.H*s/dpr}px`;
  screenEl.style.setProperty('--px',`${1/dpr}px`);// scanlines stay one device pixel thin
 }
-addEventListener('resize',resize);resize();
+addEventListener('resize',resize);addEventListener('orientationchange',resize);resize();
 const applyScan=()=>{scanEl.style.opacity=String(settings.scanlines);};
 applyScan();
 
@@ -31,9 +40,9 @@ function note(s){message=s;messageUntil=performance.now()+5000;}
 const floorsText=n=>`${n} ${n===1?'FLOOR':'FLOORS'}`;
 
 const MENU_ITEMS=[...DIFFICULTY_ORDER.map(k=>DIFFICULTY[k].label),'HIGH SCORES','SETTINGS'];
-const menuLayout=()=>layoutBox(MENU_ITEMS,{y:72,minWidth:120});
-const settingsLayout=()=>layoutBox(SETTING_ROWS.map(r=>settingLabel(r,settings)),{y:80,minWidth:200});
-const actionsLayout=()=>layoutBox(screen==='scores'?['BACK']:['AGAIN','MENU'],{y:220,scale:1,minWidth:120});
+const menuLayout=()=>layoutBox(MENU_ITEMS,{cx:LAYOUT.W/2,y:72,minWidth:120});
+const settingsLayout=()=>layoutBox(SETTING_ROWS.map(r=>settingLabel(r,settings)),{cx:LAYOUT.W/2,y:80,minWidth:200});
+const actionsLayout=()=>layoutBox(screen==='scores'?['BACK']:['AGAIN','MENU'],{cx:LAYOUT.W/2,y:LAYOUT.actionsY,scale:1,minWidth:120});
 const pauseLayout=()=>layoutBox(['RESUME','MENU'],{cx:LAYOUT.cabinet.x+LAYOUT.cabinet.w/2,y:136,minWidth:120});
 
 function startLevel(){game=new Game(levelOptions(run,settings.lanes));phase='playing';flash=offcut=null;soft=false;last=performance.now();}
@@ -108,7 +117,7 @@ function playInput(k,repeat){
  if(a==='left')game.move(-1,!repeat);if(a==='right')game.move(1,!repeat);
  if(a==='cw')game.rotate(1);if(a==='ccw')game.rotate(-1);if(a==='beat')game.flipBeat();if(a==='drop')game.drop();
 }
-function blur(){soft=false;if(screen==='play'&&phase==='playing'&&game.status==='playing'&&!game.paused){game.paused=true;boxCursor=0;}}
+function blur(){soft=false;touch.clear();if(screen==='play'&&phase==='playing'&&game.status==='playing'&&!game.paused){game.paused=true;boxCursor=0;}}
 addEventListener('blur',blur);
 document.addEventListener('visibilitychange',()=>{if(document.hidden)blur();});
 function handleEvents(now){
@@ -132,7 +141,7 @@ addEventListener('keydown',e=>{
 });
 addEventListener('keyup',e=>{if(e.key==='ArrowDown')soft=false;});
 
-const toCanvas=e=>{const r=canvas.getBoundingClientRect();return [(e.clientX-r.left)*480/r.width,(e.clientY-r.top)*270/r.height];};
+const toCanvas=e=>{const r=canvas.getBoundingClientRect();return [(e.clientX-r.left)*LAYOUT.W/r.width,(e.clientY-r.top)*LAYOUT.H/r.height];};
 function activeRows(){
  if(screen==='menu')return menuLayout().rows;
  if(screen==='settings')return settingsLayout().rows;
@@ -147,28 +156,58 @@ canvas.addEventListener('click',e=>{
  const rows=activeRows();if(!rows)return;const i=hit(rows,...toCanvas(e));if(i<0)return;setCursor(i);
  if(screen==='menu')menuInput('Enter',false);else if(screen==='settings')settingsInput('Enter',false);
  else if(screen==='scores')scoresInput('Enter',false);else playInput('Enter',false);
+});// Touch buttons (tall screen only). Each finger is tracked by pointer id, so two thumbs work together.
+canvas.addEventListener('pointerdown',e=>{
+ if(mode!=='tall'||e.pointerType==='mouse'||screen!=='play')return;
+ const b=hitButton(...toCanvas(e));if(!b)return;
+ e.preventDefault();globalThis.navigator?.vibrate?.(8);
+ try{canvas.setPointerCapture(e.pointerId);}catch{}// throws for a pointer that is no longer active; never lose the press over it
+ const now=performance.now();
+ for(const a of touch.down(e.pointerId,b,now))touchAction(a);
+ checkEnd(now);
 });
+const lift=e=>{for(const a of touch.up(e.pointerId))touchAction(a);};
+canvas.addEventListener('pointerup',lift);canvas.addEventListener('pointercancel',lift);
+function releaseTouches(){for(const a of touch.clear())touchAction(a);}
+const TOUCH_KEYS={left:'ArrowLeft',right:'ArrowRight',cw:'ArrowUp',beat:'Shift',drop:' '};
+const ENTRY_KEYS={left:'ArrowLeft',right:'ArrowRight',cw:'ArrowUp','soft-on':'ArrowDown',beat:'Enter'};
+// Touch actions reuse the key handling; while entering initials the buttons stand in for arrows and Enter.
+function touchAction(a){
+ if(screen!=='play')return;
+ if(a==='soft-off'){soft=false;return;}
+ if(phase==='entry'){const k=ENTRY_KEYS[a];if(k)playInput(k,false);return;}
+ if(phase!=='playing')return;
+ if(a==='pause'){playInput('p',false);return;}
+ if(game.paused)return;
+ if(a==='soft-on'){soft=true;return;}
+ if(a==='left-repeat'||a==='right-repeat'){playInput(a==='left-repeat'?'ArrowLeft':'ArrowRight',true);return;}
+ if(TOUCH_KEYS[a])playInput(TOUCH_KEYS[a],false);
+}
+
 
 function draw(now){
  drawSky(ctx,assets.manifest,now);drawBackdrop(ctx,assets);
+ if(mode==='rotate'){drawRotate(ctx,now);return;}
+ const tall=mode==='tall';
  if(screen==='play'){
-  drawSprites(ctx,assets,PLAY_SCENERY,now);drawDim(ctx);
+  drawSprites(ctx,assets,tall?[]:PLAY_SCENERY,now);drawDim(ctx);
   const k=LAYOUT.cabinet;drawBox(ctx,k.x,k.y,k.w,k.h,C.royal);
   drawBoard(ctx,game,{now,flash,offcut});
-  const live=phase==='playing'&&game.active();
-  drawPanel(ctx,game,{remaining:game.duration-game.elapsed,label:run.diff.label,level:run.level,score:runScore(run,game),
-   message:now<messageUntil||!live?message:`FINISH FLOOR ${game.height+1}.`});
+  const live=phase==='playing'&&game.active(),msg=now<messageUntil||!live?message:`FINISH FLOOR ${game.height+1}.`;
+  const info={remaining:game.duration-game.elapsed,label:run.diff.label,level:run.level,score:runScore(run,game)};
+  if(tall){drawStrip(ctx,game,info);drawTallSides(ctx,game);drawButtons(ctx,b=>touch.isPressed(b));drawMessage(ctx,msg);}
+  else drawPanel(ctx,game,{...info,message:msg});
   if(phase==='clear')drawBanner(ctx,{title:`LEVEL ${run.level}`,lines:['CLEAR',`${clock(game.duration-game.elapsed)} LEFT`]});
-  else if(phase==='entry')drawBanner(ctx,{title:'RUN OVER',lines:[`${result.label}  LEVEL ${result.level}`,floorsText(result.floors),'TYPE INITIALS, ENTER'],big:String(result.score),slots:entry.chars,slot:entry.slot,now});
+  else if(phase==='entry')drawBanner(ctx,{title:'RUN OVER',lines:[`${result.label}  LEVEL ${result.level}`,floorsText(result.floors),tall?'R V LETTER, B SAVE':'TYPE INITIALS, ENTER'],big:String(result.score),slots:entry.chars,slot:entry.slot,now});
   else if(phase==='table'){
    drawDim(ctx);
    drawScoreTable(ctx,scores.entries,highlight,now,{title:'RUN OVER',line:`${result.label}  LEVEL ${result.level}  ${floorsText(result.floors)}  SCORE ${result.score}`});
    drawItems(ctx,actionsLayout(),boxCursor,now);
   }
-  else if(game.paused)drawItems(ctx,pauseLayout(),boxCursor,now,{title:'PAUSED',lines:['P TO RESUME']});
+  else if(game.paused)drawItems(ctx,pauseLayout(),boxCursor,now,{title:'PAUSED',lines:[tall?'TAP RESUME':'P TO RESUME']});
   return;
  }
- drawSprites(ctx,assets,MENU_SCENERY,now);
+ drawSprites(ctx,assets,tall?[]:MENU_SCENERY,now);
  if(screen==='scores'){drawDim(ctx);drawScoreTable(ctx,scores.entries,-1,now);drawItems(ctx,actionsLayout(),boxCursor,now);return;}
  drawLogo(ctx,assets);
  if(screen==='menu'){drawItems(ctx,menuLayout(),cursor,now);drawControls(ctx);}
@@ -177,7 +216,7 @@ function draw(now){
 function frame(now){
  const dt=Math.min(100,Math.max(0,now-last));last=now;
  if(screen==='play'){
-  if(phase==='playing'){game.update(dt,soft);handleEvents(now);checkEnd(now);}
+  if(phase==='playing'){if(mode==='tall')for(const a of touch.tick(now))touchAction(a);game.update(dt,soft);handleEvents(now);checkEnd(now);}
   else if(phase==='clear'&&now-phaseAt>=CLEAR_MS){
    run=onLevelWon(run);startLevel();note(`LEVEL ${run.level}. DROPS ARE FASTER.`);
    if(!document.hasFocus())game.paused=true;// they left during the banner: no blur event will come, so open paused
